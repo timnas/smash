@@ -8,12 +8,9 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
-//HEY!
-
 typedef int jid_t;
 using namespace std;
 class Command {
-// TODO: Add your data members
 protected:
     const char* cmd_line;
  public:

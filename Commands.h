@@ -11,7 +11,6 @@
 typedef int jid_t;
 using namespace std;
 class Command {
-// TODO: Add your data members
 protected:
     const char* cmd_line;
  public:

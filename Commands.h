@@ -67,7 +67,7 @@ class ChangeDirCommand : public BuiltInCommand {
 
 class GetCurrDirCommand : public BuiltInCommand {
  public:
-  GetCurrDirCommand(const char* cmd_line);
+  explicit GetCurrDirCommand(const char* cmd_line);
   virtual ~GetCurrDirCommand() {}
   void execute() override;
 };
@@ -93,12 +93,19 @@ class JobsList {
  public:
   class JobEntry {
    jid_t jobId;
+   pid_t jobPid;
    time_t creation_time;
    string command;
    bool isStopped;
 
-   JobEntry(jid_t jobId, time_t creation_time, string& command, bool stopped);
+   JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string& command, bool stopped);
 
+  public:
+      jid_t getJobId () const;
+      bool isJobStopped() const;
+      string getCommand () const;
+      pid_t getJobPid () const;
+      time_t getCreationTime () const;
   };
  // TODO: Add your data members
  public:
@@ -116,6 +123,7 @@ class JobsList {
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed
+  void setJobsNum (jid_t newNum);
 };
 
 class ChpromptCommand : public BuiltInCommand {
@@ -220,6 +228,9 @@ class SmallShell {
   }
   static pid_t getPid () {
       return pid;
+  }
+  JobsList getJobsList() const{
+      return jobs_list;
   }
 
 

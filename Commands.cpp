@@ -149,18 +149,73 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
 
-JobsList::JobsList() : jobs_list(), jobs_num(0){}
-JobsList::JobEntry::JobEntry(jid_t jobId, time_t creation_time, string &command, bool isStopped) : jobId (jobId),
-creation_time(creation_time), command (command), isStopped(false){
+JobsList::JobsList() : jobs_list(), jobs_num(1){}
 
+void JobsList::removeFinishedJobs() {
+    SmallShell &smash = SmallShell::getInstance();
+    vector<JobEntry>::iterator it;
+    int newMax=0;
+    //first clean the list - delete all finished jobs
+    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
+        JobEntry currentJob = *it;
+        int status;
+        int returned_val = waitpid(currentJob.getJobId(), &status, WNOHANG); //WNOHANG: return immediately if no child has exited
+        //waitpid returns the process ID of the child whose state has changed, and returns -1 when there's an error
+        //if returned_val = currentJID or -1, it means the job either finished or there's an error. so delete job
+        if (returned_val == -1 ||returned_val == currentJob.getJobId()){
+            jobs_list.erase(it);
+            it--;
+        }
+    }
+    //if the list is empty, the new jobs_num is 1. return
+    if (jobs_list.empty() == true){
+        this->setJobsNum((jid_t)1);
+        return;
+    }
+    //else = find new jobs_num
+    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
+        JobEntry currentJob = *it;
+        if (currentJob.getJobId() > newMax){
+            newMax = currentJob.getJobId();
+        }
+    }
+    newMax++;
+    this->jobs_num = newMax;
+}
+
+void JobsList::setJobsNum(jid_t newNum) {
+    this->jobs_num = newNum;
+}
+
+JobsList::JobEntry::JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string &command, bool isStopped) :
+jobId (jobId), jobPid(jobPid), creation_time(creation_time), command (command), isStopped(false){
+
+}
+
+jid_t JobsList::JobEntry::getJobId() const {
+    return jobId;
+}
+
+bool JobsList::JobEntry::isJobStopped() const {
+    return isStopped;
+}
+
+string JobsList::JobEntry::getCommand() const {
+    return command;
+}
+
+pid_t JobsList::JobEntry::getJobPid() const {
+    return jobPid;
+}
+
+time_t JobsList::JobEntry::getCreationTime() const {
+    return creation_time;
 }
 
 
 Command::Command(const char *cmd_line) : cmd_line(cmd_line){}
 
-BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {
-
-}//timnatest
+BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
 
 ChpromptCommand::ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
@@ -176,3 +231,41 @@ void ChpromptCommand::execute() {
     }
     freeArgs(args,num_of_args);
 }
+
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+
+void GetCurrDirCommand::execute() {
+    long max_path_length = pathconf(".", _PC_PATH_MAX); //pathconf returns the max length of "." path (currDir)
+    char* buffer = (char*)malloc(max_path_length+1);
+    if (buffer){
+        //getcwd gets the full path name of the current working directory, up to max_path_length bytes long and stores it in buffer.
+        getcwd(buffer, (size_t)max_path_length);
+        //If the full path name length (including the null terminator) is longer than max_path_length bytes, an error occurs.
+        assert(buffer!=nullptr);
+        cout<<buffer<<endl;
+        free(buffer);
+    }
+}
+
+JobsCommand::JobsCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+
+void JobsCommand::execute() {
+    SmallShell &smash = SmallShell::getInstance();
+    (smash.getJobsList()).removeFinishedJobs();
+    vector<JobsList::JobEntry>::iterator it;
+    for (it = ((smash.getJobsList()).jobs_list).begin(); it < ((smash.getJobsList()).jobs_list).end(); it++){
+        JobsList::JobEntry current_job = *it;
+        if (current_job.isJobStopped() == true){
+            //difftime() function returns the number of seconds elapsed between time time1 and time time0, represented as a double
+            //time(nullptr) returns the current calendar time as an object of type time_t
+            cout << "[" << current_job.getJobId() << "]" << current_job.getCommand() << " : " << current_job.getJobPid()
+            << difftime(time(nullptr), current_job.getCreationTime()) << "secs(stopped)" << endl;
+        }
+        else {
+            cout << "[" << current_job.getJobId() << "]" << current_job.getCommand() << " : " << current_job.getJobPid()
+                 << difftime(time(nullptr), current_job.getCreationTime()) << "secs" << endl;
+        }
+    }
+}
+
+

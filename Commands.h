@@ -106,6 +106,7 @@ class JobsList {
       string getCommand () const;
       pid_t getJobPid () const;
       time_t getCreationTime () const;
+      void setJobStatus (bool stopped_status);
   };
  // TODO: Add your data members
  public:

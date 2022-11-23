@@ -7,6 +7,7 @@
 #include <iomanip>
 #include "Commands.h"
 
+#include <csignal>
 using namespace std;
 
 const std::string WHITESPACE = " \n\r\t\f\v";
@@ -104,6 +105,16 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+//make sure the last char "/n" is also checked
+bool isNumber (string str){
+    for (int i=0; i< str.length(); i++){
+        if (isdigit(str[i]) == false){
+            return false;
+        }
+    }
+    return true;
+}
+
 // TODO: Add your implementation for classes in Commands.h 
 
 JobsList SmallShell::jobs_list;
@@ -187,6 +198,31 @@ void JobsList::setJobsNum(jid_t newNum) {
     this->jobs_num = newNum;
 }
 
+JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
+    int max_stopped_jid = -1;
+    vector<JobsList::JobEntry>::iterator it;
+    for (it = jobs_list.begin(); it < jobs_list.end(); it++){
+        JobsList::JobEntry current_job = *it;
+        if (current_job.isJobStopped() == true){
+            max_stopped_jid = current_job.getJobId();
+        }
+    }
+    *jobId = max_stopped_jid;
+    return getJobById(max_stopped_jid);
+
+}
+
+JobsList::JobEntry *JobsList::getJobById(int jobId) {
+    vector<JobsList::JobEntry>::iterator it;
+    for (it = jobs_list.begin(); it < jobs_list.end(); it++){
+        JobsList::JobEntry current_job = *it;
+        if (current_job.getJobId() == jobId){
+            return &current_job;
+        }
+    }
+    return nullptr;
+}
+
 JobsList::JobEntry::JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string &command, bool isStopped) :
 jobId (jobId), jobPid(jobPid), creation_time(creation_time), command (command), isStopped(false){
 
@@ -210,6 +246,10 @@ pid_t JobsList::JobEntry::getJobPid() const {
 
 time_t JobsList::JobEntry::getCreationTime() const {
     return creation_time;
+}
+
+void JobsList::JobEntry::setJobStatus(bool stopped_status) {
+    isStopped = stopped_status;
 }
 
 
@@ -268,4 +308,60 @@ void JobsCommand::execute() {
     }
 }
 
+
+BackgroundCommand::BackgroundCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+
+void BackgroundCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    SmallShell &smash = SmallShell::getInstance();
+    //if no arguments - the last stopped job (in the jobs list, the one with mac JID) should be selected to continue running it in bg
+    if (num_of_args == 1){
+        jid_t last_job_jid;
+        JobsList::JobEntry *last_job = (smash.getJobsList()).getLastStoppedJob(&last_job_jid);
+        if (last_job_jid == -1){
+            //can also use cout but it's good practice to use cerr
+            cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
+        }
+        else {
+            //kill returns 0 for success and -1 for failure
+            if (kill(last_job_jid, SIGCONT) == -1){
+                perror("smash error: kill failed");
+                freeArgs(args,num_of_args);
+                return;
+            }
+            last_job->setJobStatus(false);
+            cout << last_job->getCommand() << " : " << last_job->getJobPid() << endl;
+        }
+    }
+    else if (num_of_args == 2){
+        if (!isNumber(args[1])){
+            cerr << "smash error: bg: invalid arguments" << endl;
+        }
+        jid_t job_id = stoi(args[1]); //stoi converts a string to an integer
+        JobsList::JobEntry *job = (smash.getJobsList()).getJobById(job_id);
+        if (job != nullptr){
+            int job_pid = job->getJobPid();
+            if (job->isJobStopped() == false){
+                cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
+            }
+            else {
+                if (kill(job_id, SIGCONT) == -1){
+                    perror("smash error: kill failed");
+                    freeArgs(args,num_of_args);
+                    return;
+                }
+                job->setJobStatus(false);
+                cout << job->getCommand() << " : " << job->getJobPid() << endl;
+            }
+        }
+        else { //job doesn't exist
+            cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
+        }
+    }
+    else { //number of arguments isn't valid
+        cerr << "smash error: bg: invalid arguments" << endl;
+    }
+    freeArgs(args,num_of_args);
+}
 

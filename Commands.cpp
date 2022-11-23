@@ -365,3 +365,44 @@ void BackgroundCommand::execute() {
     freeArgs(args,num_of_args);
 }
 
+KillCommand::KillCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+
+void KillCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    if (num_of_args != 3){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args,num_of_args);
+        return;
+    }
+    char first_sig_char = string(args[1]).at(0);
+    if ((!isNumber(args[2])) || (first_sig_char != '-') || (!isNumber(string(args[1]).erase(0)))){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args,num_of_args);
+        return;
+    }
+    SmallShell &smash = SmallShell::getInstance();
+    int signum = stoi(args[1]); //the minus has been erased
+    jid_t job_id = stoi(args[2]);
+    JobsList::JobEntry *job = (smash.getJobsList()).getJobById(job_id);
+    if (job == nullptr){ //no such job
+        cerr << "smash error: kill: job-id " << job_id << " does not exist" <<endl;
+        freeArgs(args,num_of_args);
+        return;
+    }
+    pid_t job_pid = job->getJobPid();
+    if (kill(job_pid, signum) == -1){ //kill failed
+        perror("smash error: kill failed");
+        freeArgs(args,num_of_args);
+        return;
+    }
+    cout << "signal number " << signum << " was sent to pid " << job_pid << endl;
+    if (signum == SIGSTOP){
+        job->setJobStatus(true);
+    }
+    else if (signum == SIGCONT){
+        job->setJobStatus(false);
+    }
+    freeArgs(args,num_of_args);
+}
+

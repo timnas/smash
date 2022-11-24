@@ -215,6 +215,16 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
 
 }
 
+void JobsList::killAllJobs() {
+    for (auto& job : jobs_list) {
+        cout << job.getJobPid() << ": " << job.getCommand() << endl;
+        if (kill(job.getJobPid(), SIGKILL) == FAIL) {
+            perror("smash error: kill failed");
+            return;
+        }
+    }
+}
+
 JobsList::JobEntry *JobsList::getJobById(int jobId) {
     vector<JobsList::JobEntry>::iterator it;
     for (it = jobs_list.begin(); it < jobs_list.end(); it++){

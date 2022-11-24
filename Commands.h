@@ -60,8 +60,8 @@ class RedirectionCommand : public Command {
 
 class ChangeDirCommand : public BuiltInCommand {
 public:
-  char** p_prev_wd;
-  ChangeDirCommand(const char* cmd_line, char** p_prev_wd);
+  char** p_previous_dir;
+  ChangeDirCommand(const char* cmd_line, char** p_previous_dir);
   virtual ~ChangeDirCommand() = default;
   void execute() override;
 };
@@ -204,12 +204,12 @@ class SmallShell {
   static string prompt;
   pid_t current_process;
   jid_t current_job;
-  string previous_dir;
 
   SmallShell();
  public:
+  char* previous_dir;
   Command *CreateCommand(const char* cmd_line);
-  SmallShell(SmallShell const&)      = delete; // disable copy ctor
+  SmallShell(SmallShell const&) = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
   static SmallShell& getInstance() // make SmallShell singleton
   {
@@ -219,9 +219,9 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
-  void setPrevDir (string current_dir){
-      previous_dir = current_dir;
-  }
+  // void setPrevDir (char* current_dir){
+  //     previous_dir = current_dir;
+  // }
   static void setPrompt(string new_prompt){
       prompt = new_prompt;
   }

@@ -145,10 +145,9 @@ class JobsCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
- // TODO: Add your data members
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~ForegroundCommand() {}
+  explicit ForegroundCommand(const char* cmd_line, JobsList* jobs);
+  virtual ~ForegroundCommand() = default;
   void execute() override;
 };
 

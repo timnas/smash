@@ -147,8 +147,12 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("chprompt") == 0) {
     return new ChpromptCommand(cmd_line);
   }
-  else if (firstWord.compare("chprompt") == 0) {
+  else if (firstWord.compare("cd") == 0) {
     return new ChangeDirCommand(cmd_line, &previous_dir);
+  }
+  else if (firstWord.compare("fg") == 0) {
+    setCmdIsFg(true);
+    //return new ForegroundCommand(cmd_line, *jobs);
   }
   else {
     return new ExternalCommand(cmd_line);
@@ -309,6 +313,85 @@ void JobsCommand::execute() {
             cout << "[" << current_job.getJobId() << "]" << current_job.getCommand() << " : " << current_job.getJobPid()
                  << difftime(time(nullptr), current_job.getCreationTime()) << "secs" << endl;
         }
+    }
+}
+
+
+ForegroundCommand::ForegroundCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+
+void ForegroundCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    SmallShell &smash = SmallShell::getInstance();
+    if (num_of_args == 1) { //Bring max job in list to foreground
+        int max_jid;
+        JobsList::JobEntry *job = (smash.getJobsList()).getLastJob(&max_jid);
+        if (!job) {
+            cerr << "smash error: fg: jobs list is empty" << endl;
+        }
+        if (job->isJobStopped()) {
+            if(kill(job->getJobPid(), SIGCONT) == FAIL) { // need to bring job to background
+                perror("smash error: kill failed");
+                freeArgs(args, num_of_args);
+                return;
+            }
+        } // now job is in backround
+        pid_t job_pid = job->getJobPid();
+        jid_t job_id = job->getJobId();
+        cout << job->getCommand() << " : " << job->getJobPid() << endl;
+        smash.setCurrProcess(job_pid);
+        smash.setCurrCmd(job->getCommand());
+        smash.setFgJid(job_id);
+        (smash.getJobsList()).removeJobById(job_id);
+        int stat_loc;
+        if (waitpid(job_pid, &stat_loc, WUNTRACED) == FAIL) {
+            perror("smash error: waitpid failed");
+            freeArgs(args, num_of_args);
+            return;
+        }
+    }
+
+    else if (num_of_args == 2) { //Bring wanted job to foreground
+        if(!isNumber(args[1])) {
+            cerr << "smash error: fg: invalid arguments" << endl;
+            freeArgs(args, num_of_args);
+            return;
+        }
+        jid_t job_id = stoi(args[1]);
+        JobsList::JobEntry *job = (smash.getJobsList()).getJobById(job_id);
+        if (job){
+            int job_pid = job->getJobPid();
+            if (job->isJobStopped()){ // need to bring job to background
+                if(kill(job_pid, SIGCONT) == FAIL) {
+                    perror("smash error: kill failed");
+                    freeArgs(args, num_of_args);
+                    return;
+                }
+            }
+            // now job is in backround
+            cout << job->getCommand() << " : " << job->getJobPid() << endl;
+            smash.setCurrProcess(job_pid);
+            smash.setCurrCmd(job->getCommand());
+            smash.setFgJid(job_id);
+            (smash.getJobsList()).removeJobById(job_id);
+            int stat_loc;
+            if (waitpid(job_pid, &stat_loc, WUNTRACED) == FAIL) {
+                perror("smash error: waitpid failed");
+                freeArgs(args, num_of_args);
+                return;
+            }
+        }
+        else {
+            cerr << "smash error: fg: job-id" << job_id << "does not exist" << endl;            
+        }
+        freeArgs(args, num_of_args);
+        return;
+    }
+    
+    else {
+        cerr << "smash error: fg: invalid arguments" << endl;
+        freeArgs(args, num_of_args);
+        return;
     }
 }
 

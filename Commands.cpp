@@ -21,6 +21,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #else
 #define FUNC_ENTRY()
 #define FUNC_EXIT()
+#define FAIL
 #endif
 
 int _parseCommandLine(const char* cmd_line, char** args);
@@ -404,5 +405,58 @@ void KillCommand::execute() {
         job->setJobStatus(false);
     }
     freeArgs(args,num_of_args);
+}
+
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char **p_prev_wd) : BuiltInCommand(cmd_line), p_prev_wd(p_prev_wd) {}
+
+//NOTE TO SELF: Talk about "cd .."
+void ChangeDirCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    if (num_of_args > 2){
+        cerr << "smash error: cd: too many arguments" << endl;
+        freeArgs(args, num_of_args);
+        return;
+    }
+    long size = pathconf(".", _PC_PATH_MAX);
+    char *path = (char *) malloc((size_t) size);
+    // if (!path) {
+    //     perror("smash error: malloc failed");
+    //     freeArgs(args, num_of_args);
+    //     return;
+    // } DO WE WANT TO CHECK MALLOC SUCCESS?
+
+    string dir_to_set = args[1];
+    if (dir_to_set == "-") { //go to previos working directory
+        if (!(*p_prev_wd)) { //previous working directory is empty
+            cerr << "smash error: cd: OLDPWD not set" << endl;
+            free(path);
+            freeArgs(args, num_of_args);
+            return;
+        }
+        else { //previous working directory exists     
+            if (chdir(*p_prev_wd) == FAIL) {
+                perror("smash error: chdir failed");
+            }
+            else {
+                free(*p_prev_wd); //Should we check if p_prev_wd!=null first?
+                *p_prev_wd = path; //free prev wd and load new one
+            }
+            free(path);
+            freeArgs(args, num_of_args);
+            return;
+        }     
+    }
+    else { //new dir is a path
+        if (chdir(args[1]) == FAIL) {
+            perror("smash error: chdir failed");
+        }
+        else {
+            free(*p_prev_wd); //Should we check if p_prev_wd!=null first?
+            *p_prev_wd = path; //free prev wd and load new one
+        }
+        freeArgs(args, num_of_args);
+        return;
+    }
 }
 

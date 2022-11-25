@@ -1,2 +1,7 @@
 # Project exclude paths
 /cmake-build-debug/
+.vscode/settings.json
+.idea
+Commands.o
+signals.o
+smash.o

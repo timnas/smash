@@ -150,9 +150,18 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("cd") == 0) {
     return new ChangeDirCommand(cmd_line, &previous_dir);
   }
+  else if (firstWord.compare("jobs") == 0) {
+    //return new JobsCommand(cmd_line, &jobs);
+  }
   else if (firstWord.compare("fg") == 0) {
     setCmdIsFg(true);
     //return new ForegroundCommand(cmd_line, *jobs);
+  }
+    else if (firstWord.compare("bg") == 0) {
+    //return new BackgroundCommand(cmd_line, &jobs);
+  }
+      else if (firstWord.compare("quit") == 0) {
+    //return new QuitCommand(cmd_line, &jobs);
   }
   else {
     return new ExternalCommand(cmd_line);

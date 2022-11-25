@@ -74,8 +74,8 @@ class GetCurrDirCommand : public BuiltInCommand {
 
 class ShowPidCommand : public BuiltInCommand {
  public:
-  ShowPidCommand(const char* cmd_line);
-  virtual ~ShowPidCommand() {}
+  explicit ShowPidCommand(const char* cmd_line);
+  virtual ~ShowPidCommand() = default;
   void execute() override;
 };
 

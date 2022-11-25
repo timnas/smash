@@ -81,10 +81,9 @@ class ShowPidCommand : public BuiltInCommand {
 
 class JobsList;
 class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members
 public:
-  QuitCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~QuitCommand() {}
+  explicit QuitCommand(const char* cmd_line, JobsList* jobs);
+  virtual ~QuitCommand() = default;
   void execute() override;
 };
 

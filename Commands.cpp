@@ -146,6 +146,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("chprompt") == 0) {
       return new ChpromptCommand(cmd_line);
   }
+  else if(firstWord.compare("quit") == 0) {
+    // return new QuitCommand(cmd_line, &jobs);
+  }
   else {
     return new ExternalCommand(cmd_line);
   }
@@ -210,6 +213,16 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     *jobId = max_stopped_jid;
     return getJobById(max_stopped_jid);
 
+}
+
+void JobsList::killAllJobs() {
+    for (auto& job : jobs_list) {
+        cout << job.getJobPid() << ": " << job.getCommand() << endl;
+        if (kill(job.getJobPid(), SIGKILL) == FAIL) {
+            perror("smash error: kill failed");
+            return;
+        }
+    }
 }
 
 JobsList::JobEntry *JobsList::getJobById(int jobId) {
@@ -371,6 +384,21 @@ void BackgroundCommand::execute() {
         cerr << "smash error: bg: invalid arguments" << endl;
     }
     freeArgs(args,num_of_args);
+}
+
+
+QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+void QuitCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    SmallShell &smash = SmallShell::getInstance();
+    if (num_of_args > 1 && string(args[1]).compare("kill") == 0) {
+        cout << "smash: sending SIGKILL signal to " << smash.getJobsList().jobs_list.size() << " jobs:" << endl;
+        smash.getJobsList().killAllJobs();
+    }
+    freeArgs(args,num_of_args);
+    delete this;
+    exit(0);
 }
 
 KillCommand::KillCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}

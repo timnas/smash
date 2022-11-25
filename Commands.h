@@ -144,10 +144,9 @@ class JobsCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
- // TODO: Add your data members
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~ForegroundCommand() {}
+  explicit ForegroundCommand(const char* cmd_line, JobsList* jobs);
+  virtual ~ForegroundCommand() = default;
   void execute() override;
 };
 
@@ -197,13 +196,14 @@ class KillCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
-  // TODO: Add your data members
   static JobsList jobs_list;
   static pid_t pid;
   static string prompt;
   pid_t current_process;
   jid_t current_job;
-
+  jid_t fg_jid;
+  string current_cmd;
+  static bool is_cmd_fg;
   SmallShell();
  public:
   char* previous_dir;
@@ -221,8 +221,20 @@ class SmallShell {
   // void setPrevDir (char* current_dir){
   //     previous_dir = current_dir;
   // }
-  static void setPrompt(string new_prompt){
+  static void setPrompt(string new_prompt) {
       prompt = new_prompt;
+  }
+  static void setCmdIsFg(bool state) {
+      is_cmd_fg = state;
+  }
+  void setCurrProcess(pid_t pid) {
+    current_process = pid;
+  }
+  void setCurrCmd(string cmd) {
+    current_cmd = cmd;
+  }
+  void setFgJid(jid_t job_id) {
+    fg_jid = job_id;
   }
   static string getPrompt (){
       return prompt;
@@ -233,9 +245,6 @@ class SmallShell {
   JobsList getJobsList() const{
       return jobs_list;
   }
-
-
-
 
   // TODO: add extra methods as needed
 };

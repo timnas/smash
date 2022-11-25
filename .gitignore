@@ -2,7 +2,6 @@
 /cmake-build-debug/
 .vscode/settings.json
 .idea
-.gitignore
 Commands.o
 signals.o
 smash.o

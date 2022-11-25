@@ -160,6 +160,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     else if (firstWord.compare("bg") == 0) {
     //return new BackgroundCommand(cmd_line, &jobs);
   }
+      else if (firstWord.compare("quit") == 0) {
+    //return new QuitCommand(cmd_line, &jobs);
+  }
   else {
     return new ExternalCommand(cmd_line);
   }

@@ -276,6 +276,14 @@ void ChpromptCommand::execute() {
     freeArgs(args,num_of_args);
 }
 
+ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+
+void ShowPidCommand::execute() {
+    SmallShell &smash = SmallShell::getInstance();
+    cout << "smash pid is " << smash.getPid() << endl;
+}
+
+
 GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
 
 void GetCurrDirCommand::execute() {

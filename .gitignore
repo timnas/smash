@@ -5,3 +5,4 @@
 Commands.o
 signals.o
 smash.o
+.DS_Store

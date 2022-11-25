@@ -161,7 +161,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     //return new BackgroundCommand(cmd_line, &jobs);
   }
     else if (firstWord.compare("kill") == 0) {
-    //return new QuitCommand(cmd_line, &jobs);
+    //return new KillCommand(cmd_line, &jobs);
   }
       else if (firstWord.compare("quit") == 0) {
     //return new QuitCommand(cmd_line, &jobs);

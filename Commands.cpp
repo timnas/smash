@@ -160,6 +160,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     else if (firstWord.compare("bg") == 0) {
     //return new BackgroundCommand(cmd_line, &jobs);
   }
+    else if (firstWord.compare("kill") == 0) {
+    //return new QuitCommand(cmd_line, &jobs);
+  }
       else if (firstWord.compare("quit") == 0) {
     //return new QuitCommand(cmd_line, &jobs);
   }
@@ -311,6 +314,59 @@ void GetCurrDirCommand::execute() {
     }
 }
 
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) : BuiltInCommand(cmd_line), p_previous_dir(p_previous_dir) {}
+
+//NOTE TO SELF: Talk to Timna about "cd .."
+void ChangeDirCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    if (num_of_args > 2){
+        cerr << "smash error: cd: too many arguments" << endl;
+        freeArgs(args, num_of_args);
+        return;
+    }
+    long size = pathconf(".", _PC_PATH_MAX);
+    char *path = (char *) malloc((size_t) size);
+    // if (!path) {
+    //     perror("smash error: malloc failed");
+    //     freeArgs(args, num_of_args);
+    //     return;
+    // } DO WE WANT TO CHECK MALLOC SUCCESS?
+
+    string dir_to_set = args[1];
+    if (dir_to_set == "-") { //go to previos working directory
+        if (!(*p_previous_dir)) { //previous working directory is empty
+            cerr << "smash error: cd: OLDPWD not set" << endl;
+            free(path);
+            freeArgs(args, num_of_args);
+            return;
+        }
+        else { //previous working directory exists     
+            if (chdir(*p_previous_dir) == FAIL) {
+                perror("smash error: chdir failed");
+            }
+            else {
+                free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
+                *p_previous_dir = path; //free prev wd and load new one
+            }
+            free(path);
+            freeArgs(args, num_of_args);
+            return;
+        }     
+    }
+    else { //new dir is a path
+        if (chdir(args[1]) == FAIL) {
+            perror("smash error: chdir failed");
+        }
+        else {
+            free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
+            *p_previous_dir = path; //free prev wd and load new one
+        }
+        freeArgs(args, num_of_args);
+        return;
+    }
+}
+
 JobsCommand::JobsCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
 
 void JobsCommand::execute() {
@@ -331,7 +387,6 @@ void JobsCommand::execute() {
         }
     }
 }
-
 
 ForegroundCommand::ForegroundCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
 
@@ -410,7 +465,6 @@ void ForegroundCommand::execute() {
         return;
     }
 }
-
 
 BackgroundCommand::BackgroundCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
 
@@ -509,56 +563,17 @@ void KillCommand::execute() {
     freeArgs(args,num_of_args);
 }
 
-ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) : BuiltInCommand(cmd_line), p_previous_dir(p_previous_dir) {}
+QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line) {}
 
-//NOTE TO SELF: Talk to Timna about "cd .."
-void ChangeDirCommand::execute() {
+void QuitCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
-    if (num_of_args > 2){
-        cerr << "smash error: cd: too many arguments" << endl;
-        freeArgs(args, num_of_args);
-        return;
+    SmallShell &smash = SmallShell::getInstance();
+    if (num_of_args > 1 && string(args[1]).compare("kill") == 0) {
+        cout << "smash: sending SIGKILL signal to " << smash.getJobsList().jobs_list.size() << " jobs:" << endl;
+        smash.getJobsList().killAllJobs();
     }
-    long size = pathconf(".", _PC_PATH_MAX);
-    char *path = (char *) malloc((size_t) size);
-    // if (!path) {
-    //     perror("smash error: malloc failed");
-    //     freeArgs(args, num_of_args);
-    //     return;
-    // } DO WE WANT TO CHECK MALLOC SUCCESS?
-
-    string dir_to_set = args[1];
-    if (dir_to_set == "-") { //go to previos working directory
-        if (!(*p_previous_dir)) { //previous working directory is empty
-            cerr << "smash error: cd: OLDPWD not set" << endl;
-            free(path);
-            freeArgs(args, num_of_args);
-            return;
-        }
-        else { //previous working directory exists     
-            if (chdir(*p_previous_dir) == FAIL) {
-                perror("smash error: chdir failed");
-            }
-            else {
-                free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
-                *p_previous_dir = path; //free prev wd and load new one
-            }
-            free(path);
-            freeArgs(args, num_of_args);
-            return;
-        }     
-    }
-    else { //new dir is a path
-        if (chdir(args[1]) == FAIL) {
-            perror("smash error: chdir failed");
-        }
-        else {
-            free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
-            *p_previous_dir = path; //free prev wd and load new one
-        }
-        freeArgs(args, num_of_args);
-        return;
-    }
+    freeArgs(args,num_of_args);
+    delete this;
+    exit(0);
 }
-

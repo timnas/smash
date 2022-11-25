@@ -147,7 +147,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("chprompt") == 0) {
     return new ChpromptCommand(cmd_line);
   }
-  else if (firstWord.compare("chprompt") == 0) {
+  else if (firstWord.compare("cd") == 0) {
     return new ChangeDirCommand(cmd_line, &previous_dir);
   }
   else {

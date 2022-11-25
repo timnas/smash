@@ -1,2 +1,7 @@
 # Project exclude paths
 /cmake-build-debug/
+.vscode
+.idea
+Commands.o
+signals.o
+smash.o

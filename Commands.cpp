@@ -151,20 +151,20 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new ChangeDirCommand(cmd_line, &previous_dir);
   }
   else if (firstWord.compare("jobs") == 0) {
-    //return new JobsCommand(cmd_line, &jobs);
+    return new JobsCommand(cmd_line);
   }
   else if (firstWord.compare("fg") == 0) {
     setCmdIsFg(true);
-    //return new ForegroundCommand(cmd_line, *jobs);
+    return new ForegroundCommand(cmd_line);
   }
     else if (firstWord.compare("bg") == 0) {
-    //return new BackgroundCommand(cmd_line, &jobs);
+        return new BackgroundCommand(cmd_line);
   }
     else if (firstWord.compare("kill") == 0) {
-    //return new KillCommand(cmd_line, &jobs);
+        return new KillCommand(cmd_line);
   }
       else if (firstWord.compare("quit") == 0) {
-    //return new QuitCommand(cmd_line, &jobs);
+        return new QuitCommand(cmd_line);
   }
   else {
     return new ExternalCommand(cmd_line);
@@ -316,7 +316,7 @@ void GetCurrDirCommand::execute() {
 
 ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) : BuiltInCommand(cmd_line), p_previous_dir(p_previous_dir) {}
 
-//NOTE TO SELF: Talk to Timna about "cd .."
+//NOTE TO SELF: Talk to Timna about "cd .." - NEED TO IMPLEMENT
 void ChangeDirCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
@@ -327,11 +327,11 @@ void ChangeDirCommand::execute() {
     }
     long size = pathconf(".", _PC_PATH_MAX);
     char *path = (char *) malloc((size_t) size);
-    // if (!path) {
-    //     perror("smash error: malloc failed");
-    //     freeArgs(args, num_of_args);
-    //     return;
-    // } DO WE WANT TO CHECK MALLOC SUCCESS?
+    if (!path) {
+        perror("smash error: malloc failed");
+        freeArgs(args, num_of_args);
+        return;
+    }
 
     string dir_to_set = args[1];
     if (dir_to_set == "-") { //go to previos working directory
@@ -346,7 +346,7 @@ void ChangeDirCommand::execute() {
                 perror("smash error: chdir failed");
             }
             else {
-                free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
+                free(*p_previous_dir);
                 *p_previous_dir = path; //free prev wd and load new one
             }
             free(path);
@@ -359,7 +359,7 @@ void ChangeDirCommand::execute() {
             perror("smash error: chdir failed");
         }
         else {
-            free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
+            free(*p_previous_dir);
             *p_previous_dir = path; //free prev wd and load new one
         }
         freeArgs(args, num_of_args);
@@ -367,7 +367,7 @@ void ChangeDirCommand::execute() {
     }
 }
 
-JobsCommand::JobsCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+JobsCommand::JobsCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 
 void JobsCommand::execute() {
     SmallShell &smash = SmallShell::getInstance();
@@ -388,7 +388,7 @@ void JobsCommand::execute() {
     }
 }
 
-ForegroundCommand::ForegroundCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+ForegroundCommand::ForegroundCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 
 void ForegroundCommand::execute() {
     int num_of_args = 0;
@@ -466,7 +466,7 @@ void ForegroundCommand::execute() {
     }
 }
 
-BackgroundCommand::BackgroundCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+BackgroundCommand::BackgroundCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 
 void BackgroundCommand::execute() {
     int num_of_args = 0;
@@ -522,7 +522,7 @@ void BackgroundCommand::execute() {
     freeArgs(args,num_of_args);
 }
 
-KillCommand::KillCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line){}
+KillCommand::KillCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 
 void KillCommand::execute() {
     int num_of_args = 0;
@@ -563,7 +563,7 @@ void KillCommand::execute() {
     freeArgs(args,num_of_args);
 }
 
-QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line) {}
+QuitCommand::QuitCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
 void QuitCommand::execute() {
     int num_of_args = 0;

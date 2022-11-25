@@ -83,7 +83,7 @@ class ShowPidCommand : public BuiltInCommand {
 class JobsList;
 class QuitCommand : public BuiltInCommand {
 public:
-  explicit QuitCommand(const char* cmd_line, JobsList* jobs);
+  explicit QuitCommand(const char* cmd_line);
   virtual ~QuitCommand() = default;
   void execute() override;
 };
@@ -138,14 +138,14 @@ public:
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  JobsCommand(const char* cmd_line, JobsList* jobs);
+  JobsCommand(const char* cmd_line);
   virtual ~JobsCommand() {}
   void execute() override;
 };
 
 class ForegroundCommand : public BuiltInCommand {
  public:
-  explicit ForegroundCommand(const char* cmd_line, JobsList* jobs);
+  explicit ForegroundCommand(const char* cmd_line);
   virtual ~ForegroundCommand() = default;
   void execute() override;
 };
@@ -153,7 +153,7 @@ class ForegroundCommand : public BuiltInCommand {
 class BackgroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
+  BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
   void execute() override;
 };
@@ -189,7 +189,7 @@ class KillCommand : public BuiltInCommand {
   /* Bonus */
  // TODO: Add your data members
  public:
-  KillCommand(const char* cmd_line, JobsList* jobs);
+  KillCommand(const char* cmd_line);
   virtual ~KillCommand() {}
   void execute() override;
 };

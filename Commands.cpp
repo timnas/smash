@@ -9,6 +9,7 @@
 
 #include <csignal>
 using namespace std;
+#define FAIL -1
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -144,7 +145,10 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new ShowPidCommand(cmd_line);
   }
   else if (firstWord.compare("chprompt") == 0) {
-      return new ChpromptCommand(cmd_line);
+    return new ChpromptCommand(cmd_line);
+  }
+  else if (firstWord.compare("chprompt") == 0) {
+    return new ChangeDirCommand(cmd_line, &previous_dir);
   }
   else if(firstWord.compare("quit") == 0) {
     // return new QuitCommand(cmd_line, &jobs);
@@ -440,5 +444,58 @@ void KillCommand::execute() {
         job->setJobStatus(false);
     }
     freeArgs(args,num_of_args);
+}
+
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) : BuiltInCommand(cmd_line), p_previous_dir(p_previous_dir) {}
+
+//NOTE TO SELF: Talk to Timna about "cd .."
+void ChangeDirCommand::execute() {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    if (num_of_args > 2){
+        cerr << "smash error: cd: too many arguments" << endl;
+        freeArgs(args, num_of_args);
+        return;
+    }
+    long size = pathconf(".", _PC_PATH_MAX);
+    char *path = (char *) malloc((size_t) size);
+    // if (!path) {
+    //     perror("smash error: malloc failed");
+    //     freeArgs(args, num_of_args);
+    //     return;
+    // } DO WE WANT TO CHECK MALLOC SUCCESS?
+
+    string dir_to_set = args[1];
+    if (dir_to_set == "-") { //go to previos working directory
+        if (!(*p_previous_dir)) { //previous working directory is empty
+            cerr << "smash error: cd: OLDPWD not set" << endl;
+            free(path);
+            freeArgs(args, num_of_args);
+            return;
+        }
+        else { //previous working directory exists     
+            if (chdir(*p_previous_dir) == FAIL) {
+                perror("smash error: chdir failed");
+            }
+            else {
+                free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
+                *p_previous_dir = path; //free prev wd and load new one
+            }
+            free(path);
+            freeArgs(args, num_of_args);
+            return;
+        }     
+    }
+    else { //new dir is a path
+        if (chdir(args[1]) == FAIL) {
+            perror("smash error: chdir failed");
+        }
+        else {
+            free(*p_previous_dir); //Should we check if p_previous_dir!=null first?
+            *p_previous_dir = path; //free prev wd and load new one
+        }
+        freeArgs(args, num_of_args);
+        return;
+    }
 }
 

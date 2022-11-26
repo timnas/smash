@@ -130,54 +130,98 @@ SmallShell::~SmallShell() {
 // TODO: add your implementation
 }
 
+
+
+bool is_cmd_builtin_bg(string cmd_s){
+    string cmd_to_run = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    return (cmd_to_run == "chprompt&") ||
+            (cmd_to_run == "showpid&") ||
+            (cmd_to_run == "pwd&") ||
+            (cmd_to_run == "cd&") ||
+            (cmd_to_run == "jobs&") ||
+            (cmd_to_run == "fg&") || 
+            (cmd_to_run == "bg&") ||
+            (cmd_to_run == "quit&") ||
+            (cmd_to_run == "kill&");
+}
+
+
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command * SmallShell::CreateCommand(const char* cmd_line) {
+Command * SmallShell::CreateCommand(const char* cmd_line, bool is_alarm) {
+    string cmd_s = _trim(string(cmd_line));
+    if (!is_cmd_builtin_bg(cmd_s) && _isBackgroundCommand(cmd_s.c_str())) {
+        char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
+        strcpy(c_cmd_line, cmd_s.c_str());
+        _removeBackgroundSign(c_cmd_line);
+        cmd_s = c_cmd_line;
+    }
+    string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
-  string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    // PIPE AND REDIRECTION: //
+    // if (strstr(cmd_line, ">") != nullptr ||
+    //     strstr(cmd_line, ">>") != nullptr) {
+    //     return new RedirectionCommand(cmd_line);
+    // }
 
-  if (firstWord.compare("pwd") == 0) {
-    return new GetCurrDirCommand(cmd_line);
-  }
-  else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
-  else if (firstWord.compare("chprompt") == 0) {
-    return new ChpromptCommand(cmd_line);
-  }
-  else if (firstWord.compare("cd") == 0) {
-    return new ChangeDirCommand(cmd_line, &previous_dir);
-  }
-  else if (firstWord.compare("jobs") == 0) {
-    return new JobsCommand(cmd_line);
-  }
-  else if (firstWord.compare("fg") == 0) {
-    setCmdIsFg(true);
-    return new ForegroundCommand(cmd_line);
-  }
+    // if (strstr(cmd_line, "|") != nullptr ||
+    //     strstr(cmd_line, "|&")) {
+    //     return new PipeCommand(cmd_line);
+    // }
+
+    // BUILT IN: //
+    if (firstWord.compare("pwd") == 0) {
+        return new GetCurrDirCommand(cmd_line);
+    }
+    else if (firstWord.compare("showpid") == 0) {
+        return new ShowPidCommand(cmd_line);
+    }
+    else if (firstWord.compare("chprompt") == 0) {
+        return new ChpromptCommand(cmd_line);
+    }
+    else if (firstWord.compare("cd") == 0) {
+        return new ChangeDirCommand(cmd_line, &previous_dir);
+    }
+    else if (firstWord.compare("jobs") == 0) {
+        return new JobsCommand(cmd_line);
+    }
+    else if (firstWord.compare("fg") == 0) {
+        this->setCmdIsFg(true);
+        return new ForegroundCommand(cmd_line);
+    }
     else if (firstWord.compare("bg") == 0) {
         return new BackgroundCommand(cmd_line);
-  }
+    }
     else if (firstWord.compare("kill") == 0) {
         return new KillCommand(cmd_line);
-  }
-      else if (firstWord.compare("quit") == 0) {
+    }
+        else if (firstWord.compare("quit") == 0) {
         return new QuitCommand(cmd_line);
-  }
-  else {
-    return new ExternalCommand(cmd_line);
-  }
-  return nullptr;
+    }
+    else {
+        return new ExternalCommand(cmd_line, is_alarm);
+    }
+    return nullptr;
 }
 
-void SmallShell::executeCommand(const char *cmd_line) {
-  // TODO: Add your implementation here
-  // for example:
-  // Command* cmd = CreateCommand(cmd_line);
-  // cmd->execute();
-  // Please note that you must fork smash process for some commands (e.g., external commands....)
+Command::Command(const char *cmd_line) : cmd_line(cmd_line) {}
+
+void SmallShell::executeCommand(const char *cmd_line, bool is_alarm) {
+    string s_cmd_line = cmd_line;
+    if (s_cmd_line.find_first_not_of(WHITESPACE) == string::npos) { //cmd is whitespace
+        return;
+    }
+    this->getJobsList().removeFinishedJobs();
+    Command* cmd = CreateCommand(cmd_line, is_alarm);
+    cmd->execute();
+
+    // reset all parameters: preparing for a new cmd
+    delete cmd;
+    this->setCurrCmd("");
+    this->setCurrProcess(-1);
+    this->setCurrDuration(0);
+    this->setCurrAlarmCmd("");
 }
 
 JobsList::JobsList() : jobs_list(), jobs_num(1){}
@@ -191,8 +235,8 @@ void JobsList::removeFinishedJobs() {
         JobEntry currentJob = *it;
         int status;
         int returned_val = waitpid(currentJob.getJobId(), &status, WNOHANG); //WNOHANG: return immediately if no child has exited
-        //waitpid returns the process ID of the child whose state has changed, and returns -1 when there's an error
-        //if returned_val = currentJID or -1, it means the job either finished or there's an error. so delete job
+        // waitpid returns the process ID of the child whose state has changed, and returns -1 when there's an error
+        // if returned_val = currentJID or -1, it means the job either finished or there's an error. so delete job
         if (returned_val == -1 ||returned_val == currentJob.getJobId()){
             jobs_list.erase(it);
             it--;
@@ -273,7 +317,7 @@ void JobsList::JobEntry::setJobStatus(bool stopped_status) {
 }
 
 
-Command::Command(const char *cmd_line) : cmd_line(cmd_line){}
+// BUILT-IN COMMANDS //
 
 BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
 
@@ -464,6 +508,7 @@ void ForegroundCommand::execute() {
         freeArgs(args, num_of_args);
         return;
     }
+    //smash.setCmdIsFg(false);
 }
 
 BackgroundCommand::BackgroundCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
@@ -577,3 +622,58 @@ void QuitCommand::execute() {
     delete this;
     exit(0);
 }
+
+
+// EXTERNAL COMMANDS //
+
+ExternalCommand::ExternalCommand(const char* cmd_line, bool is_alarm) : Command(cmd_line), is_alarm(is_alarm) {}
+
+void ExternalCommand::execute() {
+    string s_cmd_line = cmd_line;
+    string exe_cmd_line = _trim(s_cmd_line);
+    char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
+    strcpy(c_cmd_line, exe_cmd_line.c_str());
+    bool is_cmd_bg = _isBackgroundCommand(cmd_line);
+    if (is_cmd_bg) {
+        _removeBackgroundSign(c_cmd_line);
+    }
+    char exe[] = "/bin/bash";
+    char exe_name[] = "/bin/bash";
+    char flag[] = "-c";
+
+    char* args_fork[] = {exe_name, flag, c_cmd_line, nullptr};
+    pid_t pid = fork();
+    if (pid == 0) { //process is son
+        if (setpgrp() == FAIL) {
+            perror("smash error: setpgrp failed");
+            return;
+        }
+        if(execv(exe, args_fork) == FAIL) {
+            perror("smash error: execv failed");
+            return;
+        }
+    }
+    else { //process is original
+        SmallShell &smash = SmallShell::getInstance();
+        if (is_cmd_bg) {
+            (smash.getJobsList()).addJob(this, pid);
+            if (is_alarm) {
+                (smash.getAlarmsList()).addAlarm(c_cmd_line, smash.getCurrDuration(), pid);
+            }
+            is_alarm = false;
+        }
+        else {
+            smash.setCurrCmd(cmd_line);
+            smash.setCurrProcess(pid);
+            if (is_alarm) {
+                smash.setIsFgAlarm(true);
+            }
+            int stat_loc;
+            if (waitpid(pid, &stat_loc, WUNTRACED) == FAIL) {
+            perror("smash error: waitpid failed");
+            return;
+            }
+        }
+    }
+}
+

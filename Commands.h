@@ -10,6 +10,7 @@
 
 typedef int jid_t;
 using namespace std;
+
 class Command {
 protected:
     const char* cmd_line;
@@ -35,8 +36,9 @@ class BuiltInCommand : public Command {
 
 class ExternalCommand : public Command {
  public:
-  ExternalCommand(const char* cmd_line);
-  virtual ~ExternalCommand() {}
+  bool is_alarm;
+  ExternalCommand(const char* cmd_line, bool is_alarm);
+  virtual ~ExternalCommand() = default;
   void execute() override;
 };
 
@@ -88,7 +90,6 @@ public:
   void execute() override;
 };
 
-
 class JobsList {
  public:
   class JobEntry {
@@ -125,6 +126,24 @@ class JobsList {
   JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed
   void setJobsNum (jid_t newNum);
+};
+
+class AlarmList {
+  public:
+    class AlarmEntry {
+      public:
+        string cmd;
+        pid_t pid;
+        time_t creation_time;
+        time_t duration;
+        time_t limit;
+        AlarmEntry(string cmd, time_t creation_time, time_t duration, time_t limit);
+        ~AlarmEntry() = default;
+    };
+    vector<AlarmEntry> alarms_list;
+    AlarmList();
+    void addAlarm(string cmd, time_t duration, pid_t pid);
+    void delAlarm();
 };
 
 class ChpromptCommand : public BuiltInCommand {
@@ -197,17 +216,24 @@ class KillCommand : public BuiltInCommand {
 class SmallShell {
  private:
   static JobsList jobs_list;
+  static AlarmList alarms_list;
   static pid_t pid;
   static string prompt;
+
   pid_t current_process;
   jid_t current_job;
   jid_t fg_jid;
   string current_cmd;
+  string current_alaram_cmd;
   static bool is_cmd_fg;
+  static bool is_fg_alarm;
+  time_t current_duration;
+
   SmallShell();
+
  public:
   char* previous_dir;
-  Command *CreateCommand(const char* cmd_line);
+  Command *CreateCommand(const char* cmd_line, bool is_alarm);
   SmallShell(SmallShell const&) = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
   static SmallShell& getInstance() // make SmallShell singleton
@@ -217,7 +243,7 @@ class SmallShell {
     return instance;
   }
   ~SmallShell();
-  void executeCommand(const char* cmd_line);
+  void executeCommand(const char* cmd_line, bool is_alarm);
   // void setPrevDir (char* current_dir){
   //     previous_dir = current_dir;
   // }
@@ -236,14 +262,29 @@ class SmallShell {
   void setFgJid(jid_t job_id) {
     fg_jid = job_id;
   }
-  static string getPrompt (){
+  void setIsFgAlarm(bool state) {
+    is_fg_alarm = state;
+  }
+    void setCurrDuration(time_t duration) {
+    current_duration = duration;
+  }
+    void setCurrAlarmCmd(string cmd) {
+    current_alaram_cmd = cmd;
+  }
+  static string getPrompt () {
       return prompt;
   }
   static pid_t getPid () {
       return pid;
   }
-  JobsList getJobsList() const{
+  JobsList getJobsList() const {
       return jobs_list;
+  }
+  AlarmList getAlarmsList() const {
+      return alarms_list;
+  }
+  time_t getCurrDuration() {
+    return current_duration;
   }
 
   // TODO: add extra methods as needed

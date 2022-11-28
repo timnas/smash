@@ -376,14 +376,14 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool isStopped) {
 }
 
 time_t SmallShell::getMostRecentAlarmTime() {
-    alarms_list.removeFinishedJobs();
-    if (alarms_list.jobs_list.size() == 0) {
+    getAlarmsList().removeFinishedJobs();
+    if (getAlarmsList().jobs_list.size() == 0) {
         return EMPTY;
     }
-    vector<JobsList::JobEntry>::iterator curr_job = alarms_list.jobs_list.begin();
+    vector<JobsList::JobEntry>::iterator curr_job = getAlarmsList().jobs_list.begin();
     time_t time = curr_job->getDuration() - curr_job->getElapsedTime();
     curr_job++;
-    for (; curr_job != alarms_list.jobs_list.end(); curr_job++){
+    for (; curr_job != getAlarmsList().jobs_list.end(); curr_job++){
         if (curr_job->getDuration() - curr_job->getElapsedTime() < time){
             time = curr_job->getDuration() - curr_job->getElapsedTime();
         }
@@ -392,13 +392,18 @@ time_t SmallShell::getMostRecentAlarmTime() {
 }
 
 JobsList::JobEntry* SmallShell::getTimedOutJob(){
-    this->alarms_list.removeFinishedJobs();
+    this->getAlarmsList().removeFinishedJobs();
     vector<JobsList::JobEntry>::iterator curr_job;
-    for (curr_job = alarms_list.jobs_list.begin(); curr_job != alarms_list.jobs_list.end(); curr_job++) {
+    for (curr_job = getAlarmsList().jobs_list.begin(); curr_job != getAlarmsList().jobs_list.end(); curr_job++) {
         if (curr_job->getElapsedTime() >= curr_job->getDuration())
             return &(*curr_job);
     }
     return nullptr;
+}
+
+JobsList::JobEntry* JobsList::getLastJob(int* lastJobId){
+    *lastJobId = jobs_list.back().getJobId();
+    return &jobs_list.back();
 }
 
 // ---- Built-in ---- //
@@ -524,7 +529,8 @@ void ForegroundCommand::execute() {
     SmallShell &smash = SmallShell::getInstance();
     if (num_of_args == 1) { //Bring max job in list to foreground
         int max_jid;
-        JobsList::JobEntry *job = (smash.getJobsList()).getLastJob(&max_jid);
+        JobsList::JobEntry *job = smash.getJobsList().getLastJob(&max_jid);
+
         if (!job) {
             cerr << "smash error: fg: jobs list is empty" << endl;
         }
@@ -805,7 +811,7 @@ void TimeoutCommand::execute() {
 void SmallShell::addTimeoutToAlarm(const char* cmd, pid_t pid, int duration)
 {
   string cmd_line = string(cmd);
-  alarms_list.addJob(cmd_line, false, duration);
+  getAlarmsList().addJob(cmd_line, false, duration);
 }
 
 void TimeoutCommand::addAlarm(pid_t pid) const{

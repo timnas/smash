@@ -2,6 +2,7 @@
 #include <signal.h>
 #include "signals.h"
 #include "Commands.h"
+#include <unistd.h>
 
 #define FAIL -1
 using namespace std;

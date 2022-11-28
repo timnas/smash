@@ -145,7 +145,7 @@ bool SmallShell::is_fg_alarm = false;
 string SmallShell::prompt = "smash";
 SmallShell::SmallShell() : current_process(-1),
                             current_job (-1),
-                            previous_dir("")
+                            previous_dir(nullptr)
                         {}
 
 /**
@@ -461,6 +461,7 @@ ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) 
 //NOTE TO SELF: Talk to Timna about "cd .." - NEED TO IMPLEMENT
 void ChangeDirCommand::execute() {
     int num_of_args = 0;
+    const char *temp_prev = *p_previous_dir;
     char **args = makeArgs(cmd_line, &num_of_args);
     if (num_of_args > 2){
         cerr << "smash error: cd: too many arguments" << endl;
@@ -475,21 +476,21 @@ void ChangeDirCommand::execute() {
 //    }
     long max_path_length = pathconf(".", _PC_PATH_MAX);
     char buffer[max_path_length];
-    getwd(buffer);
+    getcwd(buffer, max_path_length);
     string dir_to_set = args[1];
-    if (dir_to_set == "-") { //go to previos working directory
-        if (!(*p_previous_dir)) { //previous working directory is empty
+    if (dir_to_set == "-") { //go to previous working directory
+        if (!(temp_prev)) { //previous working directory is empty
             cerr << "smash error: cd: OLDPWD not set" << endl;
             //free(path);
             freeArgs(args, num_of_args);
             return;
         }
         else { //previous working directory exists
-            if (chdir(*p_previous_dir) == FAIL) {
+            if (chdir(temp_prev) == FAIL) {
                 perror("smash error: chdir failed");
             }
             else {
-                free(*p_previous_dir);
+                //free(*p_previous_dir);
                 *p_previous_dir = buffer; //free prev wd and load new one
             }
             //free(path);
@@ -502,7 +503,9 @@ void ChangeDirCommand::execute() {
             perror("smash error: chdir failed");
         }
         else {
-            free(*p_previous_dir);
+//            if (*p_previous_dir){
+//                free(*p_previous_dir);
+//            }
             *p_previous_dir = buffer; //free prev wd and load new one
         }
         freeArgs(args, num_of_args);

@@ -212,7 +212,7 @@ class SmallShell {
   SmallShell();
 
  public:
-  char* previous_dir;
+    char* previous_dir;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&) = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator

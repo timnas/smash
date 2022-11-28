@@ -135,8 +135,6 @@ bool is_cmd_builtin_bg(string cmd_s){
 
 // ---- Small Shell ---- //
 
-SmallShell::SmallShell() {}
-
 SmallShell::~SmallShell() {}
 
 JobsList SmallShell::jobs_list;

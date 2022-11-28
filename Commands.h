@@ -71,7 +71,7 @@ class ChangeDirCommand : public BuiltInCommand {
 class GetCurrDirCommand : public BuiltInCommand {
   public:
     explicit GetCurrDirCommand(const char* cmd_line);
-    virtual ~GetCurrDirCommand() {}
+    virtual ~GetCurrDirCommand() = default;
     void execute() override;
 };
 

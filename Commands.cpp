@@ -7,7 +7,7 @@
 #include <iomanip>
 #include "Commands.h"
 #include <cassert>
-
+#include <unistd.h>
 #include <csignal>
 using namespace std;
 #define FAIL -1
@@ -222,8 +222,11 @@ void SmallShell::executeCommand(const char *cmd_line) {
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute();
 
-    // reset all parameters: preparing for a new cmd
-    delete cmd;
+//    // reset all parameters: preparing for a new cmd
+//    if (cmd){
+//        delete cmd;
+//    }
+
     this->setCurrCmd("");
     this->setCurrProcess(-1);
     this->setCurrDuration(0);
@@ -439,15 +442,18 @@ GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_
 
 void GetCurrDirCommand::execute() {
     long max_path_length = pathconf(".", _PC_PATH_MAX); //pathconf returns the max length of "." path (currDir)
-    char* buffer = (char*)malloc(max_path_length+1);
-    if (buffer){
-        //getcwd gets the full path name of the current working directory, up to max_path_length bytes long and stores it in buffer.
-        getcwd(buffer, (size_t)max_path_length);
-        //If the full path name length (including the null terminator) is longer than max_path_length bytes, an error occurs.
-        assert(buffer!=nullptr);
-        cout<<buffer<<endl;
-        free(buffer);
-    }
+//    char* buffer = (char*)malloc((size_t)max_path_length+1);
+//    if (buffer){
+//        //getcwd gets the full path name of the current working directory, up to max_path_length bytes long and stores it in buffer.
+//        getcwd(buffer, (size_t)max_path_length);
+//        //If the full path name length (including the null terminator) is longer than max_path_length bytes, an error occurs.
+//        assert(buffer!=nullptr);
+//        cout<<buffer<<endl;
+//        free(buffer);
+//    }
+    char buffer[max_path_length];
+    getcwd(buffer,max_path_length);
+    cout << buffer << endl;
 }
 
 ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) : BuiltInCommand(cmd_line), p_previous_dir(p_previous_dir) {}
@@ -461,31 +467,32 @@ void ChangeDirCommand::execute() {
         freeArgs(args, num_of_args);
         return;
     }
-    long size = pathconf(".", _PC_PATH_MAX);
-    char *path = (char *) malloc((size_t) size);
-    if (!path) {
-        perror("smash error: malloc failed");
-        freeArgs(args, num_of_args);
-        return;
-    }
-
+//    char *path = (char *) malloc((size_t) size);
+//    if (!path) {
+//        perror("smash error: malloc failed");
+//        freeArgs(args, num_of_args);
+//        return;
+//    }
+    long max_path_length = pathconf(".", _PC_PATH_MAX);
+    char buffer[max_path_length];
+    getwd(buffer);
     string dir_to_set = args[1];
     if (dir_to_set == "-") { //go to previos working directory
         if (!(*p_previous_dir)) { //previous working directory is empty
             cerr << "smash error: cd: OLDPWD not set" << endl;
-            free(path);
+            //free(path);
             freeArgs(args, num_of_args);
             return;
         }
-        else { //previous working directory exists     
+        else { //previous working directory exists
             if (chdir(*p_previous_dir) == FAIL) {
                 perror("smash error: chdir failed");
             }
             else {
                 free(*p_previous_dir);
-                *p_previous_dir = path; //free prev wd and load new one
+                *p_previous_dir = buffer; //free prev wd and load new one
             }
-            free(path);
+            //free(path);
             freeArgs(args, num_of_args);
             return;
         }     
@@ -496,7 +503,7 @@ void ChangeDirCommand::execute() {
         }
         else {
             free(*p_previous_dir);
-            *p_previous_dir = path; //free prev wd and load new one
+            *p_previous_dir = buffer; //free prev wd and load new one
         }
         freeArgs(args, num_of_args);
         return;

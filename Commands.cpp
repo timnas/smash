@@ -134,8 +134,6 @@ bool is_cmd_builtin_bg(string cmd_s){
 
 // ---- Small Shell ---- //
 
-SmallShell::SmallShell() {}
-
 SmallShell::~SmallShell() {}
 
 JobsList SmallShell::jobs_list;
@@ -233,7 +231,6 @@ void SmallShell::executeCommand(const char *cmd_line) {
 JobsList::JobsList() : jobs_list(), jobs_num(1) {}
 
 void JobsList::removeFinishedJobs() {
-    SmallShell &smash = SmallShell::getInstance();
     vector<JobEntry>::iterator it;
     int newMax=0;
     //first clean the list - delete all finished jobs

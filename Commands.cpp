@@ -277,7 +277,7 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     vector<JobsList::JobEntry>::iterator it;
     for (it = jobs_list.begin(); it < jobs_list.end(); it++){
         JobsList::JobEntry current_job = *it;
-        if (current_job.isJobStopped() == true){
+        if (current_job.isJobStopped()){
             max_stopped_jid = current_job.getJobId();
         }
     }
@@ -674,8 +674,7 @@ void BackgroundCommand::execute() {
         jid_t job_id = stoi(args[1]); //stoi converts a string to an integer
         JobsList::JobEntry *job = (smash.getJobsList()).getJobById(job_id);
         if (job != nullptr){
-            int job_pid = job->getJobPid();
-            if (job->isJobStopped() == false){
+            if (!(job->isJobStopped())){
                 cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
             }
             else {
@@ -745,12 +744,12 @@ void QuitCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
-    if (num_of_args > 1 && string(args[1]).compare("kill") == 0) {
+    if (num_of_args > 1 && string(args[1]) == "kill") {
         cout << "smash: sending SIGKILL signal to " << smash.getJobsList().jobs_list.size() << " jobs:" << endl;
         smash.getJobsList().killAllJobs();
     }
     freeArgs(args,num_of_args);
-    delete this;
+    //delete this;
     exit(0);
 }
 

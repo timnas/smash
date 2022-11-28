@@ -12,34 +12,31 @@ typedef int jid_t;
 using namespace std;
 
 class Command {
-protected:
+  protected:
     const char* cmd_line;
- public:
-  explicit Command(const char* cmd_line);
-  virtual ~Command() = default;
-  virtual void execute() = 0;
-  const char* getCmdLine(){
+  public:
+    explicit Command(const char* cmd_line);
+    virtual ~Command() = default;
+    virtual void execute() = 0;
+    const char* getCmdLine() {
       return cmd_line;
-  }
-  //virtual void prepare();
-  //virtual void cleanup();
-  // TODO: Add your extra methods if needed
+    }
 };
 
 class BuiltInCommand : public Command {
  public:
   explicit BuiltInCommand(const char* cmd_line);
-  virtual ~BuiltInCommand(){
+  virtual ~BuiltInCommand() {
       delete cmd_line;
   }
 };
 
 class ExternalCommand : public Command {
- public:
-  bool is_alarm;
-  ExternalCommand(const char* cmd_line, bool is_alarm);
-  virtual ~ExternalCommand() = default;
-  void execute() override;
+  public:
+    bool is_alarm;
+    ExternalCommand(const char* cmd_line, bool is_alarm);
+    virtual ~ExternalCommand() = default;
+    void execute() override;
 };
 
 class PipeCommand : public Command {
@@ -52,27 +49,34 @@ class PipeCommand : public Command {
 
 class RedirectionCommand : public Command {
  // TODO: Add your data members
- public:
-  explicit RedirectionCommand(const char* cmd_line);
-  virtual ~RedirectionCommand() {}
-  void execute() override;
-  //void prepare() override;
-  //void cleanup() override;
+  public:
+    explicit RedirectionCommand(const char* cmd_line);
+    virtual ~RedirectionCommand() {}
+    void execute() override;
+    //void prepare() override;
+    //void cleanup() override;
+};
+
+class TimeoutCommand : public BuiltInCommand {
+  public:
+    explicit TimeoutCommand(const char* cmd_line);
+    virtual ~TimeoutCommand() = default;
+    void execute() override;
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-public:
-  char** p_previous_dir;
-  ChangeDirCommand(const char* cmd_line, char** p_previous_dir);
-  virtual ~ChangeDirCommand() = default;
-  void execute() override;
+  public:
+    char** p_previous_dir;
+    ChangeDirCommand(const char* cmd_line, char** p_previous_dir);
+    virtual ~ChangeDirCommand() = default;
+    void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
- public:
-  explicit GetCurrDirCommand(const char* cmd_line);
-  virtual ~GetCurrDirCommand() {}
-  void execute() override;
+  public:
+    explicit GetCurrDirCommand(const char* cmd_line);
+    virtual ~GetCurrDirCommand() {}
+    void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
@@ -93,13 +97,13 @@ public:
 class JobsList {
  public:
   class JobEntry {
+   public:
    jid_t jobId;
    pid_t jobPid;
    time_t creation_time;
    string command;
-   bool isStopped;
-
-   JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string& command, bool stopped);
+   bool is_stopped;
+   JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string& command, bool is_stopped);
 
   public:
       jid_t getJobId () const;
@@ -109,7 +113,6 @@ class JobsList {
       time_t getCreationTime () const;
       void setJobStatus (bool stopped_status);
   };
- // TODO: Add your data members
  public:
     vector<JobEntry> jobs_list;
     jid_t jobs_num;
@@ -124,8 +127,7 @@ class JobsList {
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
-  // TODO: Add extra methods or modify exisitng ones as needed
-  void setJobsNum (jid_t newNum);
+  void setJobsNum (jid_t new_num);
 };
 
 class AlarmList {
@@ -136,7 +138,7 @@ class AlarmList {
         pid_t pid;
         time_t creation_time;
         time_t duration;
-        time_t limit;
+        time_t limit; //CHECK
         AlarmEntry(string cmd, time_t creation_time, time_t duration, time_t limit);
         ~AlarmEntry() = default;
     };
@@ -233,7 +235,7 @@ class SmallShell {
 
  public:
   char* previous_dir;
-  Command *CreateCommand(const char* cmd_line, bool is_alarm);
+  Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&) = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
   static SmallShell& getInstance() // make SmallShell singleton
@@ -243,7 +245,7 @@ class SmallShell {
     return instance;
   }
   ~SmallShell();
-  void executeCommand(const char* cmd_line, bool is_alarm);
+  void executeCommand(const char* cmd_line);
   // void setPrevDir (char* current_dir){
   //     previous_dir = current_dir;
   // }
@@ -274,8 +276,14 @@ class SmallShell {
   static string getPrompt () {
       return prompt;
   }
+  static bool getIsCmdFg () {
+      return is_cmd_fg;
+  }
   static pid_t getPid () {
       return pid;
+  }
+  jid_t getId () {
+      return current_job;
   }
   JobsList getJobsList() const {
       return jobs_list;

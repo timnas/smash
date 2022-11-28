@@ -51,9 +51,9 @@ class RedirectionCommand : public Command {
  // TODO: Add your data members
  string command;
  string file_name;
- bool append;
+ bool is_append;
   public:
-    explicit RedirectionCommand(const char* cmd_line);
+    explicit RedirectionCommand(const char* cmd_line, bool append);
     virtual ~RedirectionCommand() {}
     void execute() override;
     //void prepare() override;

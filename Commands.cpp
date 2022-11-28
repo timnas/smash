@@ -6,7 +6,6 @@
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
-#include <cassert>
 
 #include <csignal>
 using namespace std;
@@ -122,12 +121,9 @@ bool isNumber (string str){
 JobsList SmallShell::jobs_list;
 pid_t SmallShell::pid = getpid();
 string SmallShell::prompt = "smash";
-SmallShell::SmallShell() :  current_process(-1),
+SmallShell::SmallShell() : current_process(-1),
                             current_job (-1),
-                            fg_jid (-1),
-                            current_cmd(),
-                            current_alaram_cmd(),
-                            previous_dir(nullptr)
+                            previous_dir("")
                         {}
 
 SmallShell::~SmallShell() {

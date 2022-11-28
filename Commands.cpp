@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
+#include <cassert>
 
 #include <csignal>
 using namespace std;

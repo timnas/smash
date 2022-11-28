@@ -22,17 +22,17 @@ void alarmHandler(int sig_num) {
     JobsList::JobEntry* job = SmallShell::getInstance().getTimedOutJob();
     cout << "smash: got an alarm" << endl;
     if (job != nullptr) {
-        cout << "smash: " << job->getCommand() << " timed out!" << endl;
-        if (kill(job->getJobPid(), SIGKILL) == FAIL) {
+        cout << "smash: " << job->command << " timed out!" << endl;
+        if (kill(job->jobPid, SIGKILL) == FAIL) {
           perror("smash error: kill failed");
         }
-        SmallShell::getInstance().getAlarmsList().removeJobById(job->getJobId());
+        SmallShell::getInstance().alarms_list.removeJobById(job->jobId);
     }
     else {
       return;
     }
     timeout = SmallShell::getInstance().getMostRecentAlarmTime();
-    is_empty = SmallShell::getInstance().getAlarmsList().jobs_list.size() > 0 ? false : true;
+    is_empty = SmallShell::getInstance().alarms_list.jobs_list.size() > 0 ? false : true;
     if(timeout > 0){
       alarm(timeout);
     } 

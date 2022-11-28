@@ -138,7 +138,10 @@ bool is_cmd_builtin_bg(string cmd_s){
 SmallShell::~SmallShell() {}
 
 JobsList SmallShell::jobs_list;
+JobsList SmallShell::alarms_list;
 pid_t SmallShell::pid = getpid();
+bool SmallShell::is_cmd_fg = false;
+bool SmallShell::is_fg_alarm = false;
 string SmallShell::prompt = "smash";
 SmallShell::SmallShell() : current_process(-1),
                             current_job (-1),
@@ -158,17 +161,17 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     }
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
-    // redirection
-    if (strstr(cmd_line, ">") != nullptr ||
-        strstr(cmd_line, ">>") != nullptr) {
-        return new RedirectionCommand(cmd_line);
-    }
-
-    // pipe
-    if (strstr(cmd_line, "|") != nullptr ||
-        strstr(cmd_line, "|&")) {
-        return new PipeCommand(cmd_line);
-    }
+//    // redirection
+//    if (strstr(cmd_line, ">") != nullptr ||
+//        strstr(cmd_line, ">>") != nullptr) {
+//        return new RedirectionCommand(cmd_line);
+//    }
+//
+//    // pipe
+//    if (strstr(cmd_line, "|") != nullptr ||
+//        strstr(cmd_line, "|&")) {
+//        return new PipeCommand(cmd_line);
+//    }
 
     // built-in
     if (firstWord.compare("pwd") == 0) {

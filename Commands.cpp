@@ -145,7 +145,7 @@ bool SmallShell::is_fg_alarm = false;
 string SmallShell::prompt = "smash";
 SmallShell::SmallShell() : current_process(-1),
                             current_job (-1),
-                            previous_dir(nullptr)
+                            previous_dir("")
                         {}
 
 /**
@@ -184,7 +184,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         return new ChpromptCommand(cmd_line);
     }
     else if (firstWord.compare("cd") == 0) {
-        return new ChangeDirCommand(cmd_line, &previous_dir);
+        return new ChangeDirCommand(cmd_line);
     }
     else if (firstWord.compare("jobs") == 0) {
         return new JobsCommand(cmd_line);
@@ -456,61 +456,89 @@ void GetCurrDirCommand::execute() {
     cout << buffer << endl;
 }
 
-ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char** p_previous_dir) : BuiltInCommand(cmd_line), p_previous_dir(p_previous_dir) {}
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
 //NOTE TO SELF: Talk to Timna about "cd .." - NEED TO IMPLEMENT
 void ChangeDirCommand::execute() {
     int num_of_args = 0;
-    const char *temp_prev = *p_previous_dir;
     char **args = makeArgs(cmd_line, &num_of_args);
     if (num_of_args > 2){
         cerr << "smash error: cd: too many arguments" << endl;
         freeArgs(args, num_of_args);
         return;
     }
-//    char *path = (char *) malloc((size_t) size);
-//    if (!path) {
-//        perror("smash error: malloc failed");
+    SmallShell &smash = SmallShell::getInstance();
+    long max_path_length = pathconf(".", _PC_PATH_MAX);
+    char buffer[max_path_length];
+    string current_wd = getcwd(buffer, max_path_length);
+    string new_wd = args[1];
+    if (new_wd == "-"){
+        string previous_wd = smash.getPreviousWD();
+        if (previous_wd.empty()) {
+            cerr << "smash error: cd: OLDPWD not set" << endl;
+            freeArgs(args, num_of_args);
+            return;
+        }
+        else if (chdir(previous_wd.c_str()) == FAIL){
+            cerr << "smash error: cd: OLDPWD not set" << endl;
+            freeArgs(args, num_of_args);
+            return;
+        }
+    }
+    else if(chdir(new_wd.c_str()) == FAIL){
+        perror("smash error: chdir failed");
+    }
+    smash.setPreviousWD(current_wd);
+//    const char *temp_prev = *p_previous_dir;
+//    char **args = makeArgs(cmd_line, &num_of_args);
+//    if (num_of_args > 2){
+//        cerr << "smash error: cd: too many arguments" << endl;
 //        freeArgs(args, num_of_args);
 //        return;
 //    }
-    long max_path_length = pathconf(".", _PC_PATH_MAX);
-    char buffer[max_path_length];
-    getcwd(buffer, max_path_length);
-    string dir_to_set = args[1];
-    if (dir_to_set == "-") { //go to previous working directory
-        if (!(temp_prev)) { //previous working directory is empty
-            cerr << "smash error: cd: OLDPWD not set" << endl;
-            //free(path);
-            freeArgs(args, num_of_args);
-            return;
-        }
-        else { //previous working directory exists
-            if (chdir(temp_prev) == FAIL) {
-                perror("smash error: chdir failed");
-            }
-            else {
-                //free(*p_previous_dir);
-                *p_previous_dir = buffer; //free prev wd and load new one
-            }
-            //free(path);
-            freeArgs(args, num_of_args);
-            return;
-        }     
-    }
-    else { //new dir is a path
-        if (chdir(args[1]) == FAIL) {
-            perror("smash error: chdir failed");
-        }
-        else {
-//            if (*p_previous_dir){
-//                free(*p_previous_dir);
+////    char *path = (char *) malloc((size_t) size);
+////    if (!path) {
+////        perror("smash error: malloc failed");
+////        freeArgs(args, num_of_args);
+////        return;
+////    }
+//    long max_path_length = pathconf(".", _PC_PATH_MAX);
+//    char buffer[max_path_length];
+//    getcwd(buffer, max_path_length);
+//    string dir_to_set = args[1];
+//    if (dir_to_set == "-") { //go to previous working directory
+//        if (!(temp_prev)) { //previous working directory is empty
+//            cerr << "smash error: cd: OLDPWD not set" << endl;
+//            //free(path);
+//            freeArgs(args, num_of_args);
+//            return;
+//        }
+//        else { //previous working directory exists
+//            if (chdir(temp_prev) == FAIL) {
+//                perror("smash error: chdir failed");
 //            }
-            *p_previous_dir = buffer; //free prev wd and load new one
-        }
-        freeArgs(args, num_of_args);
-        return;
-    }
+//            else {
+//                //free(*p_previous_dir);
+//                *p_previous_dir = buffer; //free prev wd and load new one
+//            }
+//            //free(path);
+//            freeArgs(args, num_of_args);
+//            return;
+//        }
+//    }
+//    else { //new dir is a path
+//        if (chdir(args[1]) == FAIL) {
+//            perror("smash error: chdir failed");
+//        }
+//        else {
+////            if (*p_previous_dir){
+////                free(*p_previous_dir);
+////            }
+//            *p_previous_dir = buffer; //free prev wd and load new one
+//        }
+//        freeArgs(args, num_of_args);
+//        return;
+//    }
 }
 
 JobsCommand::JobsCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}

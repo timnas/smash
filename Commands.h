@@ -62,8 +62,9 @@ class RedirectionCommand : public Command {
 
 class ChangeDirCommand : public BuiltInCommand {
   public:
-    char** p_previous_dir;
-    ChangeDirCommand(const char* cmd_line, char** p_previous_dir);
+    //char** p_previous_dir;
+//    ChangeDirCommand(const char* cmd_line, char** p_previous_dir);
+    ChangeDirCommand(const char* cmd_line);
     virtual ~ChangeDirCommand() = default;
     void execute() override;
 };
@@ -212,7 +213,7 @@ class SmallShell {
   SmallShell();
 
  public:
-    char* previous_dir;
+    string previous_dir;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&) = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
@@ -282,6 +283,12 @@ class SmallShell {
   }
   time_t getCurrDuration() {
     return current_duration;
+  }
+  string getPreviousWD () {
+      return previous_dir;
+  }
+  void setPreviousWD (string newWD){
+      previous_dir = newWD;
   }
   JobsList::JobEntry* getTimedOutJob();
 

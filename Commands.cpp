@@ -10,6 +10,7 @@
 #include <csignal>
 using namespace std;
 #define FAIL -1
+#define EMPTY -1
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -292,12 +293,13 @@ JobsList::JobEntry *JobsList::getJobById(int jobId) {
     return nullptr;
 }
 
-JobsList::JobEntry::JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string &command, bool is_stopped) :
+JobsList::JobEntry::JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string &command, bool is_stopped, int duration) :
                             jobId (jobId),
                             jobPid(jobPid),
                             creation_time(creation_time),
                             command (command),
-                            is_stopped(false) {}
+                            is_stopped(false),
+                            duration(duration) {}
 
 jid_t JobsList::JobEntry::getJobId() const {
     return jobId;
@@ -323,6 +325,17 @@ void JobsList::JobEntry::setJobStatus(bool stopped_status) {
     is_stopped = stopped_status;
 }
 
+int JobsList::JobEntry::getDuration() const {
+    return duration;
+}
+
+time_t JobsList::JobEntry::getElapsedTime() const {
+    time_t curr_time;
+    time(&curr_time);
+    int elapsed_time = (int) difftime(curr_time, creation_time);
+    return elapsed_time;
+}
+
 void JobsList::killAllJobs() {
     vector<JobEntry>::iterator curr_job;
     for(curr_job = jobs_list.begin(); curr_job != jobs_list.end();  curr_job++) {
@@ -344,10 +357,9 @@ void JobsList::removeJobById(jid_t id){
     }
 }
 
-void JobsList::addJob(Command* cmd_line ,bool is_stopped) {
+void JobsList::addJob(string cmd, pid_t pid, int duration, bool isStopped) {
     SmallShell& smash = SmallShell::getInstance();
     removeFinishedJobs();
-    string s_cmd_line(cmd_line->getCmdLine());
 
     if(smash.getIsCmdFg()) {
         jid_t curr_job_id = smash.getId();
@@ -357,12 +369,38 @@ void JobsList::addJob(Command* cmd_line ,bool is_stopped) {
                 break;
             }
         }
-        jobs_list.insert(curr_job, JobEntry(smash.getId(), smash.getPid(), time(nullptr), s_cmd_line, is_stopped)); //NOT SURE
+        jobs_list.insert(curr_job, JobEntry(smash.getId(), smash.getPid(), time(nullptr), cmd, isStopped, duration)); //NOT SURE
     }
     else {
-        jobs_list.push_back(JobEntry(this->jobs_num, smash.getPid(), time(nullptr), s_cmd_line, is_stopped));
+        jobs_list.push_back(JobEntry(this->jobs_num, smash.getPid(), time(nullptr), cmd, isStopped, duration));
     }
     this->jobs_num++;
+}
+
+time_t SmallShell::getMostRecentAlarmTime() {
+    alarms_list.removeFinishedJobs();
+    if (alarms_list.jobs_list.size() == 0) {
+        return EMPTY;
+    }
+    vector<JobsList::JobEntry>::iterator curr_job = alarms_list.jobs_list.begin();
+    time_t time = curr_job->getDuration() - curr_job->getElapsedTime();
+    curr_job++;
+    for (; curr_job != alarms_list.jobs_list.end(); curr_job++){
+        if (curr_job->getDuration() - curr_job->getElapsedTime() < time){
+            time = curr_job->getDuration() - curr_job->getElapsedTime();
+        }
+    }
+    return time;
+}
+
+JobsList::JobEntry* SmallShell::getTimedOutJob(){
+    this->alarms_list.removeFinishedJobs();
+    vector<JobsList::JobEntry>::iterator curr_job;
+    for (curr_job = alarms_list.jobs_list.begin(); curr_job != alarms_list.jobs_list.end(); curr_job++) {
+        if (curr_job->getElapsedTime() >= curr_job->getDuration())
+            return &(*curr_job);
+    }
+    return nullptr;
 }
 
 // ---- Built-in ---- //
@@ -708,9 +746,9 @@ void ExternalCommand::execute() {
     else { //process is original
         SmallShell &smash = SmallShell::getInstance();
         if (is_cmd_bg) {
-            (smash.getJobsList()).addJob(this, pid);
+            (smash.getJobsList()).addJob(s_cmd_line, pid);
             if (is_alarm) {
-                (smash.getAlarmsList()).addAlarm(c_cmd_line, smash.getCurrDuration(), pid);
+                smash.getAlarmsList().addJob(s_cmd_line, pid, is_alarm);
             }
             is_alarm = false;
         }
@@ -766,6 +804,22 @@ void TimeoutCommand::execute() {
     freeArgs(args, num_of_args);            // and remeber to set it to false/free alarmcmd after execution
 }
 
+void SmallShell::addTimeoutToAlarm(const char* cmd, pid_t pid, int duration)
+{
+  string cmd_line = string(cmd);
+  alarms_list.addJob(cmd_line, false, duration);
+}
+
+void TimeoutCommand::addAlarm(pid_t pid) const{
+    SmallShell& smash = SmallShell::getInstance();
+    time_t min_alarm = smash.getMostRecentAlarmTime();
+    if (min_alarm == EMPTY || time_out < min_alarm) {
+        alarm(time_out);
+        SmallShell::getInstance().addTimeoutToAlarm(cmd_line, pid, time_out);
+    }
+    else
+        SmallShell::getInstance().addTimeoutToAlarm(cmd_line, pid, time_out);
+}
 
 // ---- Pipe ---- //
 

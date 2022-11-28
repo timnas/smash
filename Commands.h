@@ -57,13 +57,6 @@ class RedirectionCommand : public Command {
     //void cleanup() override;
 };
 
-class TimeoutCommand : public BuiltInCommand {
-  public:
-    explicit TimeoutCommand(const char* cmd_line);
-    virtual ~TimeoutCommand() = default;
-    void execute() override;
-};
-
 class ChangeDirCommand : public BuiltInCommand {
   public:
     char** p_previous_dir;
@@ -103,7 +96,8 @@ class JobsList {
    time_t creation_time;
    string command;
    bool is_stopped;
-   JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string& command, bool is_stopped);
+   int duration;
+   JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string& command, bool is_stopped, int duration);
 
   public:
       jid_t getJobId () const;
@@ -112,6 +106,8 @@ class JobsList {
       pid_t getJobPid () const;
       time_t getCreationTime () const;
       void setJobStatus (bool stopped_status);
+      int getDuration() const;
+      time_t getElapsedTime() const;
   };
  public:
     vector<JobEntry> jobs_list;
@@ -119,7 +115,7 @@ class JobsList {
 
   JobsList();
   ~JobsList() = default;
-  void addJob(Command* cmd, bool isStopped = false);
+  void addJob(string cmd, pid_t pid, int duration = 0, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -130,23 +126,23 @@ class JobsList {
   void setJobsNum (jid_t new_num);
 };
 
-class AlarmList {
-  public:
-    class AlarmEntry {
-      public:
-        string cmd;
-        pid_t pid;
-        time_t creation_time;
-        time_t duration;
-        time_t limit; //CHECK
-        AlarmEntry(string cmd, time_t creation_time, time_t duration, time_t limit);
-        ~AlarmEntry() = default;
-    };
-    vector<AlarmEntry> alarms_list;
-    AlarmList();
-    void addAlarm(string cmd, time_t duration, pid_t pid);
-    void delAlarm();
-};
+// class AlarmList {
+//   public:
+//     class AlarmEntry {
+//       public:
+//         string cmd;
+//         pid_t pid;
+//         time_t creation_time;
+//         time_t duration;
+//         time_t limit; //CHECK
+//         AlarmEntry(string cmd, time_t creation_time, time_t duration, time_t limit);
+//         ~AlarmEntry() = default;
+//     };
+//     vector<AlarmEntry> alarms_list;
+//     AlarmList();
+//     void addAlarm(string cmd, time_t duration, pid_t pid);
+//     void removeJobById(jid_t id);
+// };
 
 class ChpromptCommand : public BuiltInCommand {
     // TODO: Add your data members
@@ -157,7 +153,6 @@ public:
 };
 
 class JobsCommand : public BuiltInCommand {
- // TODO: Add your data members
  public:
   JobsCommand(const char* cmd_line);
   virtual ~JobsCommand() {}
@@ -172,7 +167,6 @@ class ForegroundCommand : public BuiltInCommand {
 };
 
 class BackgroundCommand : public BuiltInCommand {
- // TODO: Add your data members
  public:
   BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
@@ -180,35 +174,16 @@ class BackgroundCommand : public BuiltInCommand {
 };
 
 class TimeoutCommand : public BuiltInCommand {
-/* Optional */
-// TODO: Add your data members
+  int time_out;
+  string cmd;
  public:
   explicit TimeoutCommand(const char* cmd_line);
-  virtual ~TimeoutCommand() {}
+  virtual ~TimeoutCommand() = default;
   void execute() override;
-};
-
-class FareCommand : public BuiltInCommand {
-  /* Optional */
-  // TODO: Add your data members
- public:
-  FareCommand(const char* cmd_line);
-  virtual ~FareCommand() {}
-  void execute() override;
-};
-
-class SetcoreCommand : public BuiltInCommand {
-  /* Optional */
-  // TODO: Add your data members
- public:
-  SetcoreCommand(const char* cmd_line);
-  virtual ~SetcoreCommand() {}
-  void execute() override;
+  void addAlarm(pid_t pid) const;
 };
 
 class KillCommand : public BuiltInCommand {
-  /* Bonus */
- // TODO: Add your data members
  public:
   KillCommand(const char* cmd_line);
   virtual ~KillCommand() {}
@@ -218,7 +193,7 @@ class KillCommand : public BuiltInCommand {
 class SmallShell {
  private:
   static JobsList jobs_list;
-  static AlarmList alarms_list;
+  static JobsList alarms_list;
   static pid_t pid;
   static string prompt;
 
@@ -226,7 +201,7 @@ class SmallShell {
   jid_t current_job;
   jid_t fg_jid;
   string current_cmd;
-  string current_alaram_cmd;
+  string current_alarm_cmd;
   static bool is_cmd_fg;
   static bool is_fg_alarm;
   time_t current_duration;
@@ -271,13 +246,24 @@ class SmallShell {
     current_duration = duration;
   }
     void setCurrAlarmCmd(string cmd) {
-    current_alaram_cmd = cmd;
+    current_alarm_cmd = cmd;
+  }
+  time_t getMostRecentAlarmTime();
+  void addTimeoutToAlarm(const char* cmd, pid_t pid, int duration);
+  pid_t getCurrProcess() {
+    return current_process;
+  }
+  string getCurrAlarmCmd() {
+    return current_alarm_cmd;
   }
   static string getPrompt () {
       return prompt;
   }
   static bool getIsCmdFg () {
       return is_cmd_fg;
+  }
+  static bool getIsFgAlarm () {
+      return is_fg_alarm;
   }
   static pid_t getPid () {
       return pid;
@@ -288,12 +274,13 @@ class SmallShell {
   JobsList getJobsList() const {
       return jobs_list;
   }
-  AlarmList getAlarmsList() const {
+  JobsList getAlarmsList() const {
       return alarms_list;
   }
   time_t getCurrDuration() {
     return current_duration;
   }
+  JobsList::JobEntry* getTimedOutJob();
 
   // TODO: add extra methods as needed
 };

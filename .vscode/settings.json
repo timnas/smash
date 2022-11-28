@@ -8,6 +8,16 @@
         "initializer_list": "cpp",
         "string_view": "cpp",
         "vector": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "__mutex_base": "cpp",
+        "__string": "cpp",
+        "__undef_macros": "cpp",
+        "algorithm": "cpp",
+        "chrono": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "locale": "cpp",
+        "ratio": "cpp",
+        "streambuf": "cpp"
     }
 }

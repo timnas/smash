@@ -49,6 +49,9 @@ class PipeCommand : public Command {
 
 class RedirectionCommand : public Command {
  // TODO: Add your data members
+ string command;
+ string file_name;
+ bool append;
   public:
     explicit RedirectionCommand(const char* cmd_line);
     virtual ~RedirectionCommand() {}

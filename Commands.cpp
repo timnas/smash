@@ -211,7 +211,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
     if (s_cmd_line.find_first_not_of(WHITESPACE) == string::npos) { //cmd is whitespace
         return;
     }
-    jobs_list.removeFinishedJobs();
+    //jobs_list.removeFinishedJobs();
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute();
 
@@ -367,6 +367,7 @@ time_t SmallShell::getMostRecentAlarmTime() {
 }
 
 JobsList::JobEntry* SmallShell::getTimedOutJob(){
+
     this->alarms_list.removeFinishedJobs();
     vector<JobsList::JobEntry>::iterator curr_job;
     for (curr_job = alarms_list.jobs_list.begin(); curr_job != alarms_list.jobs_list.end(); curr_job++) {
@@ -720,58 +721,114 @@ void QuitCommand::execute() {
 
 ExternalCommand::ExternalCommand(const char* cmd_line, bool is_alarm) : Command(cmd_line), is_alarm(is_alarm) {}
 
+bool ExternalCommand::isCmdComplex(string cmd) {
+    return ((cmd.find_first_of('*') != string::npos) || (cmd.find_first_of('?') != string::npos));
+}
+
 void ExternalCommand::execute() {
-    string s_cmd_line = cmd_line;
-    string exe_cmd_line = _trim(s_cmd_line);
-    char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
-    strcpy(c_cmd_line, exe_cmd_line.c_str());
-    bool is_cmd_bg = _isBackgroundCommand(cmd_line);
-    // if (is_cmd_bg) {    CHECKcs
-    //     _removeBackgroundSign(c_cmd_line);
-    // }
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    SmallShell &smash = SmallShell::getInstance();
 
-    // if(isCmdComplex()) {
-
-    // }
-    char exe[] = "/bin/bash";
-    char exe_name[] = "/bin/bash";
-    char flag[] = "-c";
-
-    char* args_fork[] = {exe_name, flag, c_cmd_line, nullptr};
     pid_t pid = fork();
+    if (pid == FAIL) {
+        perror("smash error: fork failed");
+        return;
+    }
     if (pid == 0) { //process is son
         if (setpgrp() == FAIL) {
             perror("smash error: setpgrp failed");
             return;
         }
-        if (execv(exe, args_fork) == FAIL) {
-            perror("smash error: execv failed");
-            return;
-        }
-    }
-    else { //process is original
-        SmallShell &smash = SmallShell::getInstance();
-        if (is_cmd_bg) {
-            (smash.jobs_list).addJob(s_cmd_line, pid);
-            if (is_alarm) {
-                smash.alarms_list.addJob(s_cmd_line, pid, is_alarm);
+        if (isCmdComplex(cmd_line)) {
+            if (execl("/bin/bash", "bin/bash", "-c", cmd_line, nullptr) == FAIL) {
+                perror("smash error: execv failed");
+                return;
             }
-            is_alarm = false;
-        }
-        else {
-            smash.current_cmd = cmd_line;
-            smash.current_process = pid;
-            if (is_alarm) {
-                smash.is_fg_alarm = true;
+        } else { //simple command
+            if (execvp(args[0], args) == FAIL) {
+                perror("smash error: execv failed");
+                return;
             }
+        }
+    } else { //process is original (father)
+        if (_isBackgroundCommand(cmd_line)) { //background
+            smash.jobs_list.addJob(cmd_line, pid);
+        } else { //foreground
+            smash.curr_fg_pid = pid;
             int stat_loc;
             if (waitpid(pid, &stat_loc, WUNTRACED) == FAIL) {
-            perror("smash error: waitpid failed");
-            return;
+                perror("smash error: waitpid failed");
+                return;
             }
+            smash.curr_fg_pid = 0;
         }
     }
 }
+
+void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
+    int num_of_args = 0;
+    char **args = makeArgs(cmd_line, &num_of_args);
+    SmallShell &smash = SmallShell::getInstance();
+
+    pid_t pid = fork();
+    if (pid == FAIL) {
+        perror("smash error: fork failed");
+        return;
+    }
+    if (pid == 0) { //process is son
+        if (setpgrp() == FAIL) {
+            perror("smash error: setpgrp failed");
+            return;
+        }
+        if (execl("/bin/bash", "bin/bash", "-c", cmd, nullptr) == FAIL) { //TODO: need to remove "&"?
+            perror("smash error: execv failed");
+            return;
+        }
+    } else { //process is original (father)
+        cmd->addAlarm(pid);
+        if (_isBackgroundCommand(cmd->getCmdLine())) {
+            smash.curr_fg_pid = EMPTY;
+            smash.jobs_list.addJob(cmd->getCmdLine(), pid);
+        } else {
+            smash.curr_fg_pid = pid;
+            int stat_loc;
+            if (waitpid(pid, &stat_loc, WUNTRACED) == FAIL) {
+                perror("smash error: waitpid failed");
+                return;
+            }
+            smash.curr_fg_pid = 0;
+            smash.fg_jid = 0;
+        }
+    }
+}
+
+
+
+
+    //OLD ONE:
+//    else { //process is original
+//        SmallShell &smash = SmallShell::getInstance();
+//        if (is_cmd_bg) {
+//            (smash.jobs_list).addJob(s_cmd_line, pid);
+//            if (is_alarm) {
+//                smash.alarms_list.addJob(s_cmd_line, pid, is_alarm);
+//            }
+//            is_alarm = false;
+//        }
+//        else {
+//            smash.current_cmd = cmd_line;
+//            smash.current_process = pid;
+//            if (is_alarm) {
+//                smash.is_fg_alarm = true;
+//            }
+//            int stat_loc;
+//            if (waitpid(pid, &stat_loc, WUNTRACED) == FAIL) {
+//            perror("smash error: waitpid failed");
+//            return;
+//            }
+//        }
+//    }
 
 // ---- Time Out ---- //
 
@@ -780,35 +837,48 @@ TimeoutCommand::TimeoutCommand(const char *cmd_line) : BuiltInCommand(cmd_line) 
 void TimeoutCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
+    int timeout_duration = stoi(args[1]);
+    this->time_out = timeout_duration;
     SmallShell &smash = SmallShell::getInstance();
-    if (num_of_args < 3) {
-        cerr << "smash error: timeout: invalid arguments" << endl;
-        freeArgs(args, num_of_args);
-        return;
+    Command *command = smash.CreateCommand(cmd_line); //TODO: check
+    command->setCmd(cmd_line);
+    auto *ex_cmd = dynamic_cast<ExternalCommand *>(command);
+    if (!ex_cmd) {
+        ex_cmd->timeoutExecute(this);
+    } else {
+        command->execute();
     }
-    int delay;
-    if(!isNumber(args[1])) {
-        cerr << "smash error: timeout: invalid arguments" << endl;
-        freeArgs(args, num_of_args);
-        return;
-    }
-    delay = stoi(args[1]);
-    if (alarm(delay) == FAIL) {
-        perror("smash error: alarm failed");
-    }
-
-    string new_cmd;
-    for (int i = 2; i < num_of_args; i++) {
-        new_cmd.append(string(args[i]));
-        new_cmd.append(" ");
-    }
-    smash.current_duration = delay;
-    char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
-    strcpy(c_cmd_line, cmd_line);
-    smash.current_alarm_cmd = string(c_cmd_line);
-    smash.executeCommand(new_cmd.c_str()); // TODO: need to set some bool in shell about: curr cmd is alarm
-    freeArgs(args, num_of_args);            // and remeber to set it to false/free alarmcmd after execution
 }
+
+
+    //OLD ONE:
+//    if (num_of_args < 3) {
+//        cerr << "smash error: timeout: invalid arguments" << endl;
+//        freeArgs(args, num_of_args);
+//        return;
+//    }
+//    int delay;
+//    if(!isNumber(args[1])) {
+//        cerr << "smash error: timeout: invalid arguments" << endl;
+//        freeArgs(args, num_of_args);
+//        return;
+//    }
+//    delay = stoi(args[1]);
+//    if (alarm(delay) == FAIL) {
+//        perror("smash error: alarm failed");
+//    }
+//
+//    string new_cmd;
+//    for (int i = 2; i < num_of_args; i++) {
+//        new_cmd.append(string(args[i]));
+//        new_cmd.append(" ");
+//    }
+//    smash.current_duration = delay;
+//    char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
+//    strcpy(c_cmd_line, cmd_line);
+//    smash.current_alarm_cmd = string(c_cmd_line);
+//    smash.executeCommand(new_cmd.c_str()); // TODO: need to set some bool in shell about: curr cmd is alarm
+//    freeArgs(args, num_of_args);            // and remeber to set it to false/free alarmcmd after execution
 
 void SmallShell::addTimeoutToAlarm(const char* cmd, pid_t pid, int duration)
 {
@@ -826,6 +896,8 @@ void TimeoutCommand::addAlarm(pid_t pid) const{
     else
         SmallShell::getInstance().addTimeoutToAlarm(cmd_line, pid, time_out);
 }
+
+
 
 // ---- Pipe ---- //
 

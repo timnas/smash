@@ -22,6 +22,9 @@ class Command {
     const char* getCmdLine() {
       return cmd_line;
     }
+    void setCmd(const char* cmd) {
+        cmd_line = cmd;
+    }
 };
 
 class BuiltInCommand : public Command {
@@ -32,12 +35,24 @@ class BuiltInCommand : public Command {
   }
 };
 
+class TimeoutCommand : public BuiltInCommand {
+    int time_out;
+    string cmd;
+public:
+    explicit TimeoutCommand(const char* cmd_line);
+    virtual ~TimeoutCommand() = default;
+    void execute() override;
+    void addAlarm(pid_t pid) const;
+};
+
 class ExternalCommand : public Command {
   public:
     bool is_alarm;
     ExternalCommand(const char* cmd_line, bool is_alarm);
     virtual ~ExternalCommand() = default;
     void execute() override;
+    bool isCmdComplex(string cmd);
+    void timeoutExecute(TimeoutCommand* cmd);
 };
 
 class PipeCommand : public Command {
@@ -150,16 +165,6 @@ class BackgroundCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class TimeoutCommand : public BuiltInCommand {
-  int time_out;
-  string cmd;
- public:
-  explicit TimeoutCommand(const char* cmd_line);
-  virtual ~TimeoutCommand() = default;
-  void execute() override;
-  void addAlarm(pid_t pid) const;
-};
-
 class KillCommand : public BuiltInCommand {
  public:
   KillCommand(const char* cmd_line);
@@ -178,6 +183,7 @@ class SmallShell {
         pid_t current_process;
         jid_t current_job_id;
         jid_t fg_jid;
+        pid_t curr_fg_pid;
         string current_cmd;
         string current_alarm_cmd;
         bool is_cmd_fg;

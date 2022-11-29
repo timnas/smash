@@ -215,11 +215,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute();
 
-//    // reset all parameters: preparing for a new cmd
-//    if (cmd){
-//        delete cmd;
-//    }
-
+    // reset all parameters: preparing for a new cmd
     current_cmd = "";
     current_process = EMPTY;
     current_duration = 0;
@@ -231,36 +227,47 @@ void SmallShell::executeCommand(const char *cmd_line) {
 JobsList::JobsList() : jobs_list(), jobs_num(1) {}
 
 void JobsList::removeFinishedJobs() {
-    vector<JobEntry>::iterator it;
-    int newMax=0;
-    //first clean the list - delete all finished jobs
-    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
-        JobEntry currentJob = *it;
-        int status;
-        int returned_val = waitpid(currentJob.jobId, &status, WNOHANG); //WNOHANG: return immediately if no child has exited
-        // waitpid returns the process ID of the child whose state has changed, and returns -1 when there's an error
-        // if returned_val = currentJID or -1, it means the job either finished or there's an error. so delete job
-        if (returned_val == -1 ||returned_val == currentJob.jobId){
-            jobs_list.erase(it);
-            it--;
+    vector<JobEntry>::iterator curr_job;
+    for (curr_job = jobs_list.begin(); curr_job != jobs_list.end(); curr_job++){
+        pid_t pid = waitpid(curr_job->jobPid, nullptr, WNOHANG);
+        if (pid != 0) {
+            curr_job--;
+            jobs_list.erase(curr_job + 1);
         }
     }
-    //if the list is empty, the new jobs_num is 1. return
-    if (jobs_list.empty()){
-        jobs_num = 1;
-        return;
-    }
-    //else = find new jobs_num
-    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
-        JobEntry currentJob = *it;
-        if (currentJob.jobId > newMax){
-            newMax = currentJob.jobId;
-        }
-    }
-    newMax++;
-    this->jobs_num = newMax;
-}
 
+
+
+//
+//    vector<JobEntry>::iterator it;
+//    int newMax=0;
+//    //first clean the list - delete all finished jobs
+//    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
+//        JobEntry currentJob = *it;
+//        int status; //TODO check return val- should it be -1?
+//        int returned_val = waitpid(currentJob.jobId, &status, WNOHANG); //WNOHANG: return immediately if no child has exited
+//        // waitpid returns the process ID of the child whose state has changed, and returns -1 when there's an error
+//        // if returned_val = currentJID or -1, it means the job either finished or there's an error. so delete job
+//        if (returned_val == -1 ||returned_val == currentJob.jobId){
+//            jobs_list.erase(it);
+//            it--;
+//        }
+//    }
+//    //if the list is empty, the new jobs_num is 1. return
+//    if (jobs_list.empty()){
+//        jobs_num = 1;
+//        return;
+//    }
+//    //else = find new jobs_num
+//    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
+//        JobEntry currentJob = *it;
+//        if (currentJob.jobId > newMax){
+//            newMax = currentJob.jobId;
+//        }
+//    }
+//    newMax++;
+//    this->jobs_num = newMax;
+}
 
 JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int max_stopped_jid = -1;
@@ -325,7 +332,7 @@ void JobsList::removeJobById(jid_t id){
 
 void JobsList::addJob(string cmd, pid_t pid, int duration, bool isStopped) {
     SmallShell& smash = SmallShell::getInstance();
-    removeFinishedJobs();
+    this->removeFinishedJobs();
 
     if(smash.is_cmd_fg) {
         jid_t curr_job_id = smash.current_job_id;
@@ -506,11 +513,11 @@ void JobsCommand::execute() {
             //difftime() function returns the number of seconds elapsed between time time1 and time time0, represented as a double
             //time(nullptr) returns the current calendar time as an object of type time_t
             cout << "[" << current_job.jobId << "]" << current_job.command << " : " << current_job.jobPid
-            << difftime(time(nullptr), current_job.creation_time) << "secs(stopped)" << endl;
+            << difftime(time(nullptr), current_job.creation_time) << " secs (stopped)" << endl;
         }
         else {
             cout << "[" << current_job.jobId << "]" << current_job.command << " : " << current_job.jobPid
-                 << difftime(time(nullptr), current_job.creation_time) << "secs" << endl;
+                 << difftime(time(nullptr), current_job.creation_time) << " secs" << endl;
         }
     }
 }
@@ -719,7 +726,7 @@ void ExternalCommand::execute() {
     char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
     strcpy(c_cmd_line, exe_cmd_line.c_str());
     bool is_cmd_bg = _isBackgroundCommand(cmd_line);
-    // if (is_cmd_bg) {    CHECK
+    // if (is_cmd_bg) {    CHECKcs
     //     _removeBackgroundSign(c_cmd_line);
     // }
 

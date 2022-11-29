@@ -9,6 +9,9 @@
 #include <cassert>
 #include <unistd.h>
 #include <csignal>
+#include <fcntl.h>
+
+
 using namespace std;
 #define FAIL -1
 #define EMPTY -1
@@ -153,21 +156,19 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         cmd_s = c_cmd_line;
     }
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-
-//    // redirection
-//    if (strstr(cmd_line, ">") != nullptr ||
-//        strstr(cmd_line, ">>") != nullptr) {
-//        return new RedirectionCommand(cmd_line);
-//    }
-//
-//    // pipe
-//    if (strstr(cmd_line, "|") != nullptr ||
-//        strstr(cmd_line, "|&")) {
-//        return new PipeCommand(cmd_line);
-//    }
-
-    // built-in
-    if (firstWord.compare("pwd") == 0) {
+    if (cmd_s.find(">>") != string::npos){
+        return new RedirectionCommand(cmd_line,true);
+    }
+    else if (cmd_s.find('>') != string::npos){
+        return new RedirectionCommand(cmd_line,false);
+    }
+    else if (cmd_s.find("|&") != string::npos){
+        return new PipeCommand(cmd_line, false);
+    }
+    else if (cmd_s.find('|') != string::npos){
+        return new PipeCommand(cmd_line,true);
+    }
+    else if (firstWord.compare("pwd") == 0) {
         return new GetCurrDirCommand(cmd_line);
     }
     else if (firstWord.compare("showpid") == 0) {
@@ -821,7 +822,173 @@ void TimeoutCommand::addAlarm(pid_t pid) const{
 }
 
 // ---- Pipe ---- //
+PipeCommand::PipeCommand(const char* cmd_line, bool is_stdout) : Command(cmd_line), is_stdout(is_stdout){}
+void PipeCommand::execute(){
+    int fds[2];
+    if (pipe(fds) == FAIL){
+        perror("smash error: pipe failed");
+        return;
+    }
+    string cmd_trimmed = _trim(string(cmd_line));
+    string cmd_no_ampersand;
+    if (_isBackgroundCommand(cmd_line)){
+        cmd_no_ampersand = cmd_trimmed.substr(0, cmd_trimmed.length() - 1);
+    }
+    else{
+        cmd_no_ampersand = cmd_trimmed;
+    }
+    string command1,command2;
+    if (is_stdout) {
+        command1 = cmd_no_ampersand.substr(0, cmd_no_ampersand.find_first_of('|'));
+        command1 =  _trim(command1);
+        command2 = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of('|') + 1, cmd_no_ampersand.size());
+        command2 = _trim(command2);
+    } else {
+        command1 = cmd_no_ampersand.substr(0, cmd_no_ampersand.find_first_of("|&"));
+        command1 =  _trim(command1);
+        command2 = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of("|&") + 2, cmd_no_ampersand.size());
+        command2 = _trim(command2);
+    }
+    int pid1 = fork();
+    if (pid1 == FAIL){
+        perror("smash error: fork failed");
+        if (close(fds[0]) == FAIL){
+            perror("smash error: close failed");
+        }
+        if (close(fds[1]) == FAIL){
+            perror("smash error: close failed");
+        }
+        return;
+    }
+    if (pid1 == 0){
+        SmallShell &smash = SmallShell::getInstance();
+        if (dup2(fds[1], (is_stdout ? 1 : 2)) == FAIL){
+            perror("smash error: dup2 failed");
+            return;
+        }
+        if (close(fds[0]) == FAIL){
+            perror("smash error: close failed");
+            return;
+        }
+        if (close(fds[1]) == FAIL){
+            perror("smash error: close failed");
+            return;
+        }
+        Command *cmd = smash.CreateCommand(command1.c_str());
+        smash.executeCommand(command1.c_str());
+        if (kill(getpid(), SIGKILL) == FAIL){
+            perror("smash error: kill failed");
+            return;
+        }
+        return;
+    }
+    int pid2 = fork();
+    if (pid2 == FAIL){
+        perror("smash error: fork failed");
+        if (close(fds[0]) == FAIL){
+            perror("smash error: close failed");
+        }
+        if (close(fds[1]) == FAIL){
+            perror("smash error: close failed");
+        }
+        return;
+    }
+    if (pid2 == 0){
+        SmallShell &smash = SmallShell::getInstance();
+        if (dup2(fds[0], 0) == FAIL){
+            perror("smash error: dup2 failed");
+            return;
+        }
+        if (close(fds[0]) == FAIL){
+            perror("smash error: close failed");
+            return;
+        }
+        if (close(fds[1]) == FAIL){
+            perror("smash error: close failed");
+            return;
+        }
+        Command *cmd = smash.CreateCommand(command2.c_str());
+        smash.executeCommand(command2.c_str());
+        if (kill(getpid(), SIGKILL) == FAIL){
+            perror("smash error: kill failed");
+            return;
+        }
+        return;
+    }
+    if (close(fds[0]) == FAIL){
+        perror("smash error: close failed");
+        return;
+    }
+    if (close(fds[1]) == FAIL){
+        perror("smash error: close failed");
+        return;
+    }
+    if (waitpid(pid1, nullptr,0) == FAIL){
+        perror("smash error: waitpid failed");
+        return;
+    }
+    if (waitpid(pid2, nullptr,0) == FAIL){
+        perror("smash error: waitpid failed");
+        return;
+    }
+}
 
 // ---- Redirection ---- //
+RedirectionCommand::RedirectionCommand(const char* cmd_line, bool append) : Command(cmd_line), is_append(append){
+    //remove ampersand - not sure if needed
+    string cmd_trimmed = _trim(string(cmd_line));
+    string cmd_no_ampersand;
+    if (_isBackgroundCommand(cmd_line)){
+        cmd_no_ampersand = cmd_trimmed.substr(0, cmd_trimmed.length() - 1);
+    }
+    else{
+        cmd_no_ampersand = cmd_trimmed;
+    }
+    if (append){
+        command = cmd_no_ampersand.substr(0,cmd_no_ampersand.find_first_of(">>"));
+        command = _trim(command);
+        file_name = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of(">>")+2);
+        file_name = _trim(file_name);
+    }
+    else {
+        command = cmd_no_ampersand.substr(0,cmd_no_ampersand.find_first_of('>'));
+        command = _trim(command);
+        file_name = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of('>')+1);
+        file_name = _trim(file_name);
+    }
+}
+
+void RedirectionCommand::execute(){
+    SmallShell& smash = SmallShell::getInstance();
+    int fd;
+    if (is_append){
+        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_APPEND, 0666);
+    }
+    else {
+        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0666);
+    }
+    if (fd == FAIL){
+        perror("smash error: open failed");
+        return;
+    }
+    int stdout_temp_fd = dup(STDOUT_FILENO);
+    if (stdout_temp_fd == FAIL){
+        perror("smash error: dup failed");
+    }
+    if (dup2(fd, STDOUT_FILENO) == FAIL){
+        perror("smash error: dup2 failed");
+    }
+    if (close(fd) == FAIL){
+        perror("smash error: close failed");
+    }
+    smash.executeCommand(command.c_str()); //maybe command line??
+    if (dup2(stdout_temp_fd,STDOUT_FILENO) == FAIL){
+        perror("smash error: dup2 failed");
+    }
+    if (close(stdout_temp_fd) == FAIL){
+        perror("smash error: close failed");
+    }
+
+}
 
 

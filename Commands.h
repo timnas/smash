@@ -41,24 +41,23 @@ class ExternalCommand : public Command {
 };
 
 class PipeCommand : public Command {
-  // TODO: Add your data members
+private:
+    bool is_stdout;
  public:
-  PipeCommand(const char* cmd_line);
+  PipeCommand(const char* cmd_line, bool is_stdout);
   virtual ~PipeCommand() {}
   void execute() override;
 };
 
 class RedirectionCommand : public Command {
- // TODO: Add your data members
- string command;
- string file_name;
- bool is_append;
-  public:
+private:
+    string command;
+    string file_name;
+    bool is_append;
+public:
     explicit RedirectionCommand(const char* cmd_line, bool append);
-    virtual ~RedirectionCommand() {}
+    virtual ~RedirectionCommand() = default;
     void execute() override;
-    //void prepare() override;
-    //void cleanup() override;
 };
 
 class ChangeDirCommand : public BuiltInCommand {

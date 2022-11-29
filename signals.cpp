@@ -4,15 +4,47 @@
 #include "Commands.h"
 #include <unistd.h>
 
-#define FAIL -1
 using namespace std;
 
 void ctrlZHandler(int sig_num) {
-	// TODO: Add your implementation
+	SmallShell &smash = SmallShell::getInstance();
+    pid_t pid = smash.current_process_pid;
+    jid_t jid = smash.fg_jid;
+    cout << "smash: got ctrl-Z" << endl;
+    if (pid == FAIL){ //there's no process running in fg
+        return;
+    }
+    string command = smash.current_cmd;
+    (smash.jobs_list).addJob(command,true);
+    if (kill(pid,SIGSTOP) == 0){ //success
+        JobsList::JobEntry *job = (smash.jobs_list).getJobById(jid);
+        if (job != nullptr){
+            job->is_stopped = true;
+        }
+        else {
+            (smash.jobs_list).addJob(command,pid,0,true);
+        }
+        cout << "smash: process " << pid << " was stopped" << endl;
+        smash.current_process_pid = EMPTY;
+        smash.fg_jid = EMPTY;
+    }
+    else {
+        perror("smash error: kill failed");
+    }
 }
 
 void ctrlCHandler(int sig_num) {
-  // TODO: Add your implementation
+  SmallShell &smash = SmallShell::getInstance();
+  pid_t pid = smash.current_process_pid;
+  cout << "smash: got ctrl-C" << endl;
+  if (pid == EMPTY){ //no process in fg
+      return;
+  }
+  if (kill(pid,SIGKILL) != 0){
+      perror("smash error: kill failed");
+      return;
+  }
+  cout << "smash: process " << pid << " was killed" << endl;
 }
 
 void alarmHandler(int sig_num) {

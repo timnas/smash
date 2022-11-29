@@ -8,6 +8,8 @@
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define FAIL -1
+#define EMPTY -1
 
 typedef int jid_t;
 using namespace std;
@@ -179,7 +181,7 @@ class SmallShell {
         string prompt = "smash";
         string previous_dir;
 
-        pid_t current_process;
+        pid_t current_process_pid;
         jid_t current_job_id;
         jid_t fg_jid;
         pid_t curr_fg_pid;

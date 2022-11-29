@@ -13,8 +13,7 @@
 
 
 using namespace std;
-#define FAIL -1
-#define EMPTY -1
+
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -140,7 +139,7 @@ bool is_cmd_builtin_bg(string cmd_s){
 
 SmallShell::~SmallShell() = default;
 
-SmallShell::SmallShell() : current_process(-1),
+SmallShell::SmallShell() : current_process_pid(-1),
                             current_job_id (-1),
                             previous_dir("") {}
 
@@ -218,7 +217,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
 
     // reset all parameters: preparing for a new cmd
     current_cmd = "";
-    current_process = EMPTY;
+    current_process_pid = EMPTY;
     current_duration = 0;
     current_alarm_cmd = "";
 }
@@ -547,7 +546,7 @@ void ForegroundCommand::execute() {
         pid_t job_pid = job->jobPid;
         jid_t job_id = job->jobId;
         cout << job->command << " : " << job->jobPid << endl;
-        smash.current_process = job_pid;
+        smash.current_process_pid = job_pid;
         smash.current_cmd = job->command;
         smash.fg_jid = job_id;
         smash.jobs_list.removeJobById(job_id);
@@ -579,7 +578,7 @@ void ForegroundCommand::execute() {
             // now job is in backround
             cout << job->command << " : " << job->jobPid << endl;
 
-            smash.current_process = job_pid;
+            smash.current_process_pid = job_pid;
             smash.current_cmd = job->command;
             smash.fg_jid = job_id;
             smash.jobs_list.removeJobById(job_id);

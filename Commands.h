@@ -17,6 +17,9 @@ using namespace std;
 class Command {
   protected:
     const char* cmd_line;
+    const char* cmd_no_ampersand;
+    char *args[COMMAND_MAX_ARGS];
+    int num_of_args;
   public:
     explicit Command(const char* cmd_line);
     virtual ~Command() = default;
@@ -48,9 +51,11 @@ public:
 };
 
 class ExternalCommand : public Command {
+private:
+    bool is_background;
   public:
     bool is_alarm;
-    ExternalCommand(const char* cmd_line, bool is_alarm);
+    ExternalCommand(const char* cmd_line, bool is_alarm, bool is_background);
     virtual ~ExternalCommand() = default;
     void execute() override;
     bool isCmdComplex(string cmd);

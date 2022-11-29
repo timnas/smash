@@ -147,12 +147,15 @@ SmallShell::SmallShell() : current_process_pid(-1),
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
 Command * SmallShell::CreateCommand(const char* cmd_line) {
+//    const char* no_ampersand
     string cmd_s = _trim(string(cmd_line));
-    if (!is_cmd_builtin_bg(cmd_s) && _isBackgroundCommand(cmd_s.c_str())) {
-        char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
+    bool is_background = _isBackgroundCommand(cmd_line);
+    char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
+    if (is_background) {
         strcpy(c_cmd_line, cmd_s.c_str());
         _removeBackgroundSign(c_cmd_line);
         cmd_s = c_cmd_line;
+        cmd_s = _trim(cmd_s);
     }
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     if (cmd_s.find(">>") != string::npos){
@@ -171,7 +174,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         return new GetCurrDirCommand(cmd_line);
     }
     else if (firstWord.compare("showpid") == 0) {
-        return new ShowPidCommand(cmd_line);
+        return new ShowPidCommand(c_cmd_line);
     }
     else if (firstWord.compare("chprompt") == 0) {
         return new ChpromptCommand(cmd_line);
@@ -199,12 +202,21 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         return new TimeoutCommand(cmd_line);
     }
     else {
-        return new ExternalCommand(cmd_line, false); //TODO: change false to "is_cmd_alarm"
+        return new ExternalCommand(cmd_line, false, is_background); //TODO: change false to "is_cmd_alarm"
     }
     return nullptr;
 }
 
-Command::Command(const char *cmd_line) : cmd_line(cmd_line) {}
+Command::Command(const char *cmd_line) : cmd_line(cmd_line) {
+    string cmd_trimmed = _trim(string(cmd_line));
+    if (_isBackgroundCommand(cmd_line)){
+        cmd_no_ampersand = (cmd_trimmed.substr(0, cmd_trimmed.length() - 1)).c_str();
+    }
+    else{
+        cmd_no_ampersand = cmd_trimmed.c_str();
+    }
+    num_of_args = _parseCommandLine(cmd_no_ampersand, args);
+}
 
 void SmallShell::executeCommand(const char *cmd_line) {
     string s_cmd_line = cmd_line;
@@ -228,12 +240,15 @@ JobsList::JobsList() : jobs_list(), jobs_num(1) {}
 
 void JobsList::removeFinishedJobs() {
     vector<JobEntry>::iterator curr_job;
+    //int status;
     for (curr_job = jobs_list.begin(); curr_job != jobs_list.end(); curr_job++){
         pid_t pid = waitpid(curr_job->jobPid, nullptr, WNOHANG);
         if (pid != 0) {
             curr_job--;
             jobs_list.erase(curr_job + 1);
+           // int stat = WTERMSIG(status);
         }
+
     }
 
 
@@ -390,7 +405,9 @@ ChpromptCommand::ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line
 
 void ChpromptCommand::execute() {
     int num_of_args = 0;
+
     char **args = makeArgs(cmd_line, &num_of_args);
+
     SmallShell &smash = SmallShell::getInstance();
     if (num_of_args == 1){
         smash.prompt = "smash";
@@ -719,17 +736,21 @@ void QuitCommand::execute() {
 
 // ---- External ---- //
 
-ExternalCommand::ExternalCommand(const char* cmd_line, bool is_alarm) : Command(cmd_line), is_alarm(is_alarm) {}
+ExternalCommand::ExternalCommand(const char* cmd_line, bool is_alarm, bool is_background) :
+        Command(cmd_line),
+        is_alarm(is_alarm),
+        is_background(is_background){}
 
 bool ExternalCommand::isCmdComplex(string cmd) {
     return ((cmd.find_first_of('*') != string::npos) || (cmd.find_first_of('?') != string::npos));
 }
 
 void ExternalCommand::execute() {
-    int num_of_args = 0;
-    char **args = makeArgs(cmd_line, &num_of_args);
+//    int num_of_args = 0;
+//    char **args = makeArgs(cmd_no_ampersand, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
-
+//    char *temp = args[1];
+//    cout << args[1] << endl;
     pid_t pid = fork();
     if (pid == FAIL) {
         perror("smash error: fork failed");
@@ -741,27 +762,31 @@ void ExternalCommand::execute() {
             return;
         }
         if (isCmdComplex(cmd_line)) {
-            if (execl("/bin/bash", "bin/bash", "-c", cmd_line, nullptr) == FAIL) {
-                perror("smash error: execv failed");
+            if (execl("/bin/bash", "bin/bash", "-c", cmd_no_ampersand, nullptr) == FAIL) {
+                perror("smash error: execl failed");
                 return;
             }
         } else { //simple command
             if (execvp(args[0], args) == FAIL) {
-                perror("smash error: execv failed");
+                perror("smash error: execvp failed");
                 return;
             }
         }
     } else { //process is original (father)
-        if (_isBackgroundCommand(cmd_line)) { //background
+        if (is_background) { //background
             smash.jobs_list.addJob(cmd_line, pid);
+            smash.curr_fg_pid = EMPTY;
         } else { //foreground
             smash.curr_fg_pid = pid;
+            smash.current_cmd = cmd_line;
             int stat_loc;
             if (waitpid(pid, &stat_loc, WUNTRACED) == FAIL) {
                 perror("smash error: waitpid failed");
                 return;
             }
-            smash.curr_fg_pid = 0;
+            smash.curr_fg_pid = EMPTY;
+            smash.current_cmd = "";
+            smash.fg_jid = EMPTY;
         }
     }
 }
@@ -781,8 +806,8 @@ void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
             perror("smash error: setpgrp failed");
             return;
         }
-        if (execl("/bin/bash", "bin/bash", "-c", cmd, nullptr) == FAIL) { //TODO: need to remove "&"?
-            perror("smash error: execv failed");
+        if (execl("/bin/bash", "bin/bash", "-c", cmd_no_ampersand, nullptr) == FAIL) { //TODO: need to remove "&"?
+            perror("smash error: execl failed");
             return;
         }
     } else { //process is original (father)
@@ -797,8 +822,8 @@ void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
                 perror("smash error: waitpid failed");
                 return;
             }
-            smash.curr_fg_pid = 0;
-            smash.fg_jid = 0;
+            smash.curr_fg_pid = EMPTY;
+            smash.fg_jid = EMPTY;
         }
     }
 }
@@ -907,24 +932,16 @@ void PipeCommand::execute(){
         perror("smash error: pipe failed");
         return;
     }
-    string cmd_trimmed = _trim(string(cmd_line));
-    string cmd_no_ampersand;
-    if (_isBackgroundCommand(cmd_line)){
-        cmd_no_ampersand = cmd_trimmed.substr(0, cmd_trimmed.length() - 1);
-    }
-    else{
-        cmd_no_ampersand = cmd_trimmed;
-    }
     string command1,command2;
     if (is_stdout) {
-        command1 = cmd_no_ampersand.substr(0, cmd_no_ampersand.find_first_of('|'));
+        command1 = string(cmd_no_ampersand).substr(0, string(cmd_no_ampersand).find_first_of('|'));
         command1 =  _trim(command1);
-        command2 = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of('|') + 1, cmd_no_ampersand.size());
+        command2 = string(cmd_no_ampersand).substr(string(cmd_no_ampersand).find_first_of('|') + 1, string(cmd_no_ampersand).size());
         command2 = _trim(command2);
     } else {
-        command1 = cmd_no_ampersand.substr(0, cmd_no_ampersand.find_first_of("|&"));
+        command1 = string(cmd_no_ampersand).substr(0, string(cmd_no_ampersand).find_first_of("|&"));
         command1 =  _trim(command1);
-        command2 = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of("|&") + 2, cmd_no_ampersand.size());
+        command2 = string(cmd_no_ampersand).substr(string(cmd_no_ampersand).find_first_of("|&") + 2, string(cmd_no_ampersand).size());
         command2 = _trim(command2);
     }
     int pid1 = fork();
@@ -1014,24 +1031,16 @@ void PipeCommand::execute(){
 // ---- Redirection ---- //
 RedirectionCommand::RedirectionCommand(const char* cmd_line, bool append) : Command(cmd_line), is_append(append){
     //remove ampersand - not sure if needed
-    string cmd_trimmed = _trim(string(cmd_line));
-    string cmd_no_ampersand;
-    if (_isBackgroundCommand(cmd_line)){
-        cmd_no_ampersand = cmd_trimmed.substr(0, cmd_trimmed.length() - 1);
-    }
-    else{
-        cmd_no_ampersand = cmd_trimmed;
-    }
     if (append){
-        command = cmd_no_ampersand.substr(0,cmd_no_ampersand.find_first_of(">>"));
+        command = string(cmd_no_ampersand).substr(0,string(cmd_no_ampersand).find_first_of(">>"));
         command = _trim(command);
-        file_name = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of(">>")+2);
+        file_name = string(cmd_no_ampersand).substr(string(cmd_no_ampersand).find_first_of(">>")+2);
         file_name = _trim(file_name);
     }
     else {
-        command = cmd_no_ampersand.substr(0,cmd_no_ampersand.find_first_of('>'));
+        command = string(cmd_no_ampersand).substr(0,string(cmd_no_ampersand).find_first_of('>'));
         command = _trim(command);
-        file_name = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of('>')+1);
+        file_name = string(cmd_no_ampersand).substr(string(cmd_no_ampersand).find_first_of('>')+1);
         file_name = _trim(file_name);
     }
 }

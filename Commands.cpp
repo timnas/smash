@@ -328,7 +328,7 @@ void JobsList::killAllJobs() {
     vector<JobEntry>::iterator curr_job;
     for(curr_job = jobs_list.begin(); curr_job != jobs_list.end();  curr_job++) {
         cout << curr_job->jobPid << ": " << curr_job->command << endl;
-        if(kill(curr_job->jobPid, SIGKILL) == -1) {
+        if(kill(curr_job->jobPid, SIGKILL) == FAIL) {
             perror("smash error: kill failed");
         }
     }
@@ -753,6 +753,7 @@ void QuitCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
+    (smash.jobs_list).removeFinishedJobs();
     if (num_of_args > 1 && string(args[1]) == "kill") {
         cout << "smash: sending SIGKILL signal to " << smash.jobs_list.jobs_list.size() << " jobs:" << endl;
         smash.jobs_list.killAllJobs();

@@ -188,7 +188,7 @@ class SmallShell {
 
         pid_t current_process_pid;
         jid_t current_job_id;
-        jid_t fg_jid;
+        jid_t fg_jid = EMPTY;
         pid_t curr_fg_pid;
         string current_cmd;
         string current_alarm_cmd;

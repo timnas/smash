@@ -357,8 +357,8 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
         id=jobs_list.back().jobId + 1;
     }
 
-    if(smash.curr_fg_pid!=EMPTY) {
-        int curr_job_id = smash.curr_fg_pid;
+    if(smash.fg_jid!=EMPTY) {
+        int curr_job_id = smash.fg_jid;
         JobEntry new_job(curr_job_id, pid, timestamp, cmd, is_stopped, duration);
         vector<JobEntry>::iterator it;
         int i=0;
@@ -559,11 +559,11 @@ void JobsCommand::execute() {
         if (current_job.is_stopped == true){
             //difftime() function returns the number of seconds elapsed between time time1 and time time0, represented as a double
             //time(nullptr) returns the current calendar time as an object of type time_t
-            cout << "[" << current_job.jobId << "]" << current_job.command << " : " << current_job.jobPid
+            cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
             << difftime(time(nullptr), current_job.creation_time) << " secs (stopped)" << endl;
         }
         else {
-            cout << "[" << current_job.jobId << "]" << current_job.command << " : " << current_job.jobPid
+            cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
                  << difftime(time(nullptr), current_job.creation_time) << " secs" << endl;
         }
     }
@@ -803,8 +803,8 @@ void ExternalCommand::execute() {
         }
     } else { //process is original (father)
         if (is_background) { //background
-            smash.jobs_list.addJob(cmd_line, pid);
             smash.curr_fg_pid = EMPTY;
+            smash.jobs_list.addJob(cmd_line, pid);
         } else { //foreground
             smash.curr_fg_pid = pid;
             smash.current_cmd = cmd_line;

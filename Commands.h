@@ -56,7 +56,7 @@ private:
   public:
     bool is_alarm;
     ExternalCommand(const char* cmd_line, bool is_alarm, bool is_background);
-    virtual ~ExternalCommand() = default;
+    virtual ~ExternalCommand(){}
     void execute() override;
     bool isCmdComplex(string cmd);
     void timeoutExecute(TimeoutCommand* cmd);

@@ -345,24 +345,53 @@ void JobsList::removeJobById(jid_t id){
     }
 }
 
-void JobsList::addJob(string cmd, pid_t pid, int duration, bool isStopped) {
+void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
+    int id=1;
+    removeFinishedJobs();
+    time_t timestamp;
+    time(&timestamp);
     SmallShell& smash = SmallShell::getInstance();
-    this->removeFinishedJobs();
 
-    if(smash.is_cmd_fg) {
-        jid_t curr_job_id = smash.current_job_id;
-        auto curr_job = jobs_list.begin();
-        for (; curr_job != jobs_list.end(); curr_job++) { //find position
-            if (curr_job->jobId > curr_job_id) {
+    if(!jobs_list.empty())
+    {
+        id=jobs_list.back().jobId + 1;
+    }
+
+    if(smash.curr_fg_pid!=EMPTY) {
+        int curr_job_id = smash.curr_fg_pid;
+        JobEntry new_job(curr_job_id, pid, timestamp, cmd, is_stopped, duration);
+        vector<JobEntry>::iterator it;
+        int i=0;
+        for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
+            if (it->jobId > curr_job_id){
                 break;
             }
+            i++;
         }
-        jobs_list.insert(curr_job, JobEntry(smash.current_job_id, smash.pid, time(nullptr), cmd, isStopped, duration)); //NOT SURE
+        jobs_list.insert(jobs_list.begin() + i, new_job);
     }
-    else {
-        jobs_list.push_back(JobEntry(this->jobs_num, smash.pid, time(nullptr), cmd, isStopped, duration));
+    else{
+        JobEntry new_job(id,pid,timestamp,cmd,is_stopped,duration);
+        jobs_list.push_back(new_job);
     }
-    this->jobs_num++;
+
+//    SmallShell& smash = SmallShell::getInstance();
+//    this->removeFinishedJobs();
+//
+//    if(smash.is_cmd_fg) {
+//        jid_t curr_job_id = smash.current_job_id;
+//        auto curr_job = jobs_list.begin();
+//        for (; curr_job != jobs_list.end(); curr_job++) { //find position
+//            if (curr_job->jobId > curr_job_id) {
+//                break;
+//            }
+//        }
+//        jobs_list.insert(curr_job, JobEntry(smash.current_job_id, smash.pid, time(nullptr), cmd, is_stopped, duration)); //NOT SURE
+//    }
+//    else {
+//        jobs_list.push_back(JobEntry(this->jobs_num, smash.pid, time(nullptr), cmd, is_stopped, duration));
+//    }
+//    this->jobs_num++;
 }
 
 time_t SmallShell::getMostRecentAlarmTime() {

@@ -68,12 +68,28 @@ string _rtrim(const std::string& s)
   size_t end = s.find_last_not_of(WHITESPACE);
   return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
-
+void removespace(string str);
 string _trim(const std::string& s)
 {
-  return _rtrim(_ltrim(s));
+    //string string = _rtrim(_ltrim(s));
+    removespace(s);
+    return s;
+//  return removeSpaces(string);
 }
-
+void removespace(string s)
+{
+    //traversing the string
+    for (int i = 0; i < s.length(); i++)
+    {
+        if (s[i] == ' ')
+        {
+            //using in-built function to erase element
+            s.erase(s.begin() + i);
+            i--;
+        }
+    }
+    cout << s;
+}
 int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_ENTRY()
   int i = 0;

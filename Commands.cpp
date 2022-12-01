@@ -736,7 +736,7 @@ void KillCommand::execute() {
     SmallShell &smash = SmallShell::getInstance();
     string signal_str = args[1];
     signal_str = signal_str.erase(0);
-    int signum = stoi(args[1]); //the minus has been erased
+    int signum = stoi(signal_str); //the minus has been erased
     jid_t job_id = stoi(args[2]);
     JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);
     if (job == nullptr){ //no such job

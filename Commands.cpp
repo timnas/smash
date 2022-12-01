@@ -829,7 +829,7 @@ void ExternalCommand::execute() {
 
 void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
     int num_of_args = 0;
-    char **args = makeArgs(cmd_line, &num_of_args);
+    //char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
 
     pid_t pid = fork();
@@ -1005,7 +1005,7 @@ void PipeCommand::execute(){
             perror("smash error: close failed");
             return;
         }
-        Command *cmd = smash.CreateCommand(command1.c_str());
+       // Command *cmd = smash.CreateCommand(command1.c_str());
         smash.executeCommand(command1.c_str());
         if (kill(getpid(), SIGKILL) == FAIL){
             perror("smash error: kill failed");
@@ -1038,7 +1038,7 @@ void PipeCommand::execute(){
             perror("smash error: close failed");
             return;
         }
-        Command *cmd = smash.CreateCommand(command2.c_str());
+      //  Command *cmd = smash.CreateCommand(command2.c_str());
         smash.executeCommand(command2.c_str());
         if (kill(getpid(), SIGKILL) == FAIL){
             perror("smash error: kill failed");

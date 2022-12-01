@@ -475,7 +475,6 @@ void GetCurrDirCommand::execute() {
 
 ChangeDirCommand::ChangeDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
-//NOTE TO SELF: Talk to Timna about "cd .." - NEED TO IMPLEMENT
 void ChangeDirCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
@@ -502,60 +501,11 @@ void ChangeDirCommand::execute() {
             return;
         }
     }
-    else if(chdir(new_wd.c_str()) == FAIL){
+    else if(chdir(new_wd.c_str()) == FAIL) {
         perror("smash error: chdir failed");
+        return;
     }
     smash.previous_dir = current_wd;
-//    const char *temp_prev = *p_previous_dir;
-//    char **args = makeArgs(cmd_line, &num_of_args);
-//    if (num_of_args > 2){
-//        cerr << "smash error: cd: too many arguments" << endl;
-//        freeArgs(args, num_of_args);
-//        return;
-//    }
-////    char *path = (char *) malloc((size_t) size);
-////    if (!path) {
-////        perror("smash error: malloc failed");
-////        freeArgs(args, num_of_args);
-////        return;
-////    }
-//    long max_path_length = pathconf(".", _PC_PATH_MAX);
-//    char buffer[max_path_length];
-//    getcwd(buffer, max_path_length);
-//    string dir_to_set = args[1];
-//    if (dir_to_set == "-") { //go to previous working directory
-//        if (!(temp_prev)) { //previous working directory is empty
-//            cerr << "smash error: cd: OLDPWD not set" << endl;
-//            //free(path);
-//            freeArgs(args, num_of_args);
-//            return;
-//        }
-//        else { //previous working directory exists
-//            if (chdir(temp_prev) == FAIL) {
-//                perror("smash error: chdir failed");
-//            }
-//            else {
-//                //free(*p_previous_dir);
-//                *p_previous_dir = buffer; //free prev wd and load new one
-//            }
-//            //free(path);
-//            freeArgs(args, num_of_args);
-//            return;
-//        }
-//    }
-//    else { //new dir is a path
-//        if (chdir(args[1]) == FAIL) {
-//            perror("smash error: chdir failed");
-//        }
-//        else {
-////            if (*p_previous_dir){
-////                free(*p_previous_dir);
-////            }
-//            *p_previous_dir = buffer; //free prev wd and load new one
-//        }
-//        freeArgs(args, num_of_args);
-//        return;
-//    }
 }
 
 JobsCommand::JobsCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
@@ -1109,7 +1059,7 @@ void RedirectionCommand::execute(){
     if (close(fd) == FAIL){
         perror("smash error: close failed");
     }
-    smash.executeCommand(command.c_str()); //maybe command line??
+    smash.executeCommand(cmd_line); //maybe command line??
     if (dup2(stdout_temp_fd,STDOUT_FILENO) == FAIL){
         perror("smash error: dup2 failed");
     }

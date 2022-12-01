@@ -72,23 +72,8 @@ void removespace(string str);
 string _trim(const std::string& s)
 {
     //string string = _rtrim(_ltrim(s));
-    removespace(s);
-    return s;
-//  return removeSpaces(string);
-}
-void removespace(string s)
-{
-    //traversing the string
-    for (int i = 0; i < s.length(); i++)
-    {
-        if (s[i] == ' ')
-        {
-            //using in-built function to erase element
-            s.erase(s.begin() + i);
-            i--;
-        }
-    }
-    cout << s;
+    //removespace(s);
+    return _rtrim(_ltrim(s));
 }
 int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_ENTRY()

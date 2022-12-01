@@ -114,6 +114,10 @@ void _removeBackgroundSign(char* cmd_line) {
 
 //make sure the last char "/n" is also checked
 bool isNumber (string str){
+    int num =0; //num of '-' (should ignore)
+    while(str[num] == '-') {
+        num++;
+    }
     for (int i=0; (unsigned)i< str.length(); i++){
         if (isdigit(str[i]) == false){
             return false;
@@ -581,6 +585,7 @@ void ForegroundCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
+    smash.jobs_list.removeFinishedJobs();
     if (num_of_args == 1) { //Bring max job in list to foreground
         int max_jid;
         JobsList::JobEntry *job = smash.jobs_list.getLastJob(&max_jid);
@@ -717,17 +722,17 @@ KillCommand::KillCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 void KillCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
-    if (num_of_args != 3){
+    if (num_of_args != 3 || !((args[1])[0]=='-' && (isNumber(args[1]))) || !(isNumber(args[2]))){
         cerr << "smash error: kill: invalid arguments" << endl;
         freeArgs(args,num_of_args);
         return;
     }
-    char first_sig_char = string(args[1]).at(0);
-    if ((!isNumber(args[2])) || (first_sig_char != '-') || (!isNumber(string(args[1]).erase(0)))){
-        cerr << "smash error: kill: invalid arguments" << endl;
-        freeArgs(args,num_of_args);
-        return;
-    }
+//    char first_sig_char = string(args[1]).at(0);
+//    if ((!isNumber(args[2])) || (first_sig_char != '-') || (!isNumber(string(args[1]).erase(0)))){
+//        cerr << "smash error: kill: invalid arguments" << endl;
+//        freeArgs(args,num_of_args);
+//        return;
+//    }
     SmallShell &smash = SmallShell::getInstance();
     int signum = stoi(args[1]); //the minus has been erased
     jid_t job_id = stoi(args[2]);

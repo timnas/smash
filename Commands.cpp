@@ -570,11 +570,11 @@ void JobsCommand::execute() {
             //difftime() function returns the number of seconds elapsed between time time1 and time time0, represented as a double
             //time(nullptr) returns the current calendar time as an object of type time_t
             cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
-            << difftime(time(nullptr), current_job.creation_time) << " secs (stopped)" << endl;
+            << " " << current_job.getElapsedTime() << " secs (stopped)" << endl;
         }
         else {
             cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
-                 << difftime(time(nullptr), current_job.creation_time) << " secs" << endl;
+            << " " << current_job.getElapsedTime() << " secs" << endl;
         }
     }
 }

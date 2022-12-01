@@ -6,3 +6,6 @@ Commands.o
 signals.o
 smash.o
 .DS_Store
+output.txt
+smash
+tests/

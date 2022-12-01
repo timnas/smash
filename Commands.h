@@ -36,13 +36,15 @@ class BuiltInCommand : public Command {
  public:
   explicit BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand() {
-      delete cmd_line;
+      {
+          delete cmd_line;
+      }
   }
 };
 
 class TimeoutCommand : public BuiltInCommand {
     int time_out;
-    string cmd;
+    //string cmd;
 public:
     explicit TimeoutCommand(const char* cmd_line);
     virtual ~TimeoutCommand() = default;
@@ -185,12 +187,11 @@ class SmallShell {
         JobsList alarms_list;
         pid_t pid = getpid();
         string prompt = "smash";
-        string previous_dir;
+        string previous_dir = "";
 
-        pid_t current_process_pid;
-        jid_t current_job_id;
+        pid_t current_process_pid = EMPTY;
         jid_t fg_jid = EMPTY;
-        pid_t curr_fg_pid;
+        pid_t curr_fg_pid = EMPTY;
         string current_cmd;
         string current_alarm_cmd;
         bool is_cmd_fg;

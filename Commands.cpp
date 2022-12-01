@@ -1,13 +1,13 @@
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <iostream>
 #include <vector>
 #include <sstream>
 #include <sys/wait.h>
-#include <iomanip>
+//#include <iomanip>
 #include "Commands.h"
 #include <cassert>
-#include <unistd.h>
+//#include <unistd.h>
 #include <csignal>
 #include <fcntl.h>
 
@@ -15,7 +15,7 @@
 using namespace std;
 
 
-const std::string WHITESPACE = " \n\r\t\f\v";
+const string WHITESPACE = " \n\r\t\f\v";
 
 #if 0
 #define FUNC_ENTRY()  \
@@ -77,12 +77,12 @@ string _trim(const std::string& s)
 int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_ENTRY()
   int i = 0;
-  std::istringstream iss(_trim(string(cmd_line)).c_str());
+  std::istringstream iss(_trim(string(cmd_line)));
   for(std::string s; iss >> s; ) {
     args[i] = (char*)malloc(s.length()+1);
     memset(args[i], 0, s.length()+1);
     strcpy(args[i], s.c_str());
-    args[++i] = NULL;
+    args[++i] = nullptr;
   }
   return i;
 
@@ -114,7 +114,7 @@ void _removeBackgroundSign(char* cmd_line) {
 
 //make sure the last char "/n" is also checked
 bool isNumber (string str){
-    for (int i=0; i< str.length(); i++){
+    for (int i=0; (unsigned)i< str.length(); i++){
         if (isdigit(str[i]) == false){
             return false;
         }
@@ -139,9 +139,7 @@ bool is_cmd_builtin_bg(string cmd_s){
 
 SmallShell::~SmallShell() = default;
 
-SmallShell::SmallShell() : current_process_pid(-1),
-                            current_job_id (-1),
-                            previous_dir("") {}
+SmallShell::SmallShell() {}
 
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
@@ -170,32 +168,32 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     else if (cmd_s.find('|') != string::npos){
         return new PipeCommand(cmd_line,true);
     }
-    else if (firstWord.compare("pwd") == 0) {
+    else if (firstWord =="pwd") {
         return new GetCurrDirCommand(cmd_line);
     }
-    else if (firstWord.compare("showpid") == 0) {
+    else if (firstWord == "showpid") {
         return new ShowPidCommand(c_cmd_line);
     }
-    else if (firstWord.compare("chprompt") == 0) {
+    else if (firstWord == "chprompt") {
         return new ChpromptCommand(cmd_line);
     }
-    else if (firstWord.compare("cd") == 0) {
+    else if (firstWord == "cd") {
         return new ChangeDirCommand(cmd_line);
     }
-    else if (firstWord.compare("jobs") == 0) {
+    else if (firstWord == "jobs") {
         return new JobsCommand(cmd_line);
     }
-    else if (firstWord.compare("fg") == 0) {
+    else if (firstWord == "fg") {
         is_cmd_fg = true;
         return new ForegroundCommand(cmd_line);
     }
-    else if (firstWord.compare("bg") == 0) {
+    else if (firstWord == "bg") {
         return new BackgroundCommand(cmd_line);
     }
-    else if (firstWord.compare("kill") == 0) {
+    else if (firstWord == "kill") {
         return new KillCommand(cmd_line);
     }
-    else if (firstWord.compare("quit") == 0) {
+    else if (firstWord == "quit") {
         return new QuitCommand(cmd_line);
     }
     else if (firstWord == "timeout") {
@@ -204,7 +202,6 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     else {
         return new ExternalCommand(cmd_line, false, is_background); //TODO: change false to "is_cmd_alarm"
     }
-    return nullptr;
 }
 
 Command::Command(const char *cmd_line) : cmd_line(cmd_line) {
@@ -230,8 +227,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
     // reset all parameters: preparing for a new cmd
     current_cmd = "";
     current_process_pid = EMPTY;
-    current_duration = 0;
-    current_alarm_cmd = "";
+    curr_fg_pid = EMPTY;
+    //current_duration = 0;
+    //current_alarm_cmd = "";
 }
 
 // ---- Jobs List & entry ---- //
@@ -301,9 +299,8 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
 JobsList::JobEntry *JobsList::getJobById(jid_t jobId) {
     vector<JobsList::JobEntry>::iterator it;
     for (it = jobs_list.begin(); it < jobs_list.end(); it++){
-        JobsList::JobEntry current_job = *it;
-        if (current_job.jobId == jobId){
-            return &current_job;
+        if (it->jobId == jobId){
+            return &(*it);
         }
     }
     return nullptr;

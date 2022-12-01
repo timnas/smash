@@ -738,6 +738,7 @@ void KillCommand::execute() {
     signal_str = signal_str.erase(0,1);
     int signum = stoi(signal_str); //the minus has been erased
     int job_id = stoi(args[2]);
+    smash.jobs_list.removeFinishedJobs();
     JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);
     if (job == nullptr){ //no such job
         cerr << "smash error: kill: job-id " << job_id << " does not exist" <<endl;

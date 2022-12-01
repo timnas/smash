@@ -118,7 +118,7 @@ bool isNumber (string str){
     while(str[num] == '-') {
         num++;
     }
-    for (int i=0; (unsigned)i< str.length(); i++){
+    for (int i=num; (unsigned)i< str.length(); i++){
         if (isdigit(str[i]) == false){
             return false;
         }
@@ -734,6 +734,8 @@ void KillCommand::execute() {
 //        return;
 //    }
     SmallShell &smash = SmallShell::getInstance();
+    string signal_str = args[1];
+    signal_str = signal_str.erase(0);
     int signum = stoi(args[1]); //the minus has been erased
     jid_t job_id = stoi(args[2]);
     JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);

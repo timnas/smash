@@ -298,12 +298,21 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
 
 }
 
-JobsList::JobEntry *JobsList::getJobById(int jobId) {
+JobsList::JobEntry *JobsList::getJobById(jid_t jobId) {
     vector<JobsList::JobEntry>::iterator it;
     for (it = jobs_list.begin(); it < jobs_list.end(); it++){
         JobsList::JobEntry current_job = *it;
         if (current_job.jobId == jobId){
             return &current_job;
+        }
+    }
+    return nullptr;
+}
+JobsList::JobEntry* JobsList::getJobByPId(pid_t jobPId){
+    vector<JobEntry>::iterator it;
+    for(it =jobs_list.begin(); it!= jobs_list.end(); it++){
+        if(it->jobPid==jobPId){
+            return &(*it);
         }
     }
     return nullptr;

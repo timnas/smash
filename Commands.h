@@ -136,7 +136,8 @@ class JobsList {
     void printJobsList();
     void killAllJobs();
     void removeFinishedJobs();
-    JobEntry* getJobById(int jobId);
+    JobEntry* getJobById(jid_t jobId);
+    JobEntry* getJobByPId(pid_t jobId);
     void removeJobById(int jobId);
     JobEntry* getLastJob(int* lastJobId);
     JobEntry* getLastStoppedJob(int *jobId);

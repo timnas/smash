@@ -9,7 +9,7 @@ using namespace std;
 void ctrlZHandler(int sig_num) {
 	SmallShell &smash = SmallShell::getInstance();
     pid_t pid = smash.curr_fg_pid;
-    jid_t jid = smash.fg_jid;
+ //   jid_t jid = smash.fg_jid;
     cout << "smash: got ctrl-Z" << endl;
     if (pid == FAIL){ //there's no process running in fg
         return;
@@ -17,7 +17,7 @@ void ctrlZHandler(int sig_num) {
     string command = smash.current_cmd;
     (smash.jobs_list).addJob(command,true);
     if (kill(pid,SIGSTOP) == 0){ //success
-        JobsList::JobEntry *job = (smash.jobs_list).getJobById(jid);
+        JobsList::JobEntry *job = (smash.jobs_list).getJobByPId(pid);
         if (job != nullptr){
             job->is_stopped = true;
         }

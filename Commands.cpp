@@ -68,12 +68,13 @@ string _rtrim(const std::string& s)
   size_t end = s.find_last_not_of(WHITESPACE);
   return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
-
+void removespace(string str);
 string _trim(const std::string& s)
 {
-  return _rtrim(_ltrim(s));
+    //string string = _rtrim(_ltrim(s));
+    //removespace(s);
+    return _rtrim(_ltrim(s));
 }
-
 int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_ENTRY()
   int i = 0;
@@ -118,7 +119,7 @@ bool isNumber (string str){
     while(str[num] == '-') {
         num++;
     }
-    for (int i=0; (unsigned)i< str.length(); i++){
+    for (int i=num; (unsigned)i< str.length(); i++){
         if (isdigit(str[i]) == false){
             return false;
         }
@@ -684,8 +685,11 @@ void KillCommand::execute() {
 //        return;
 //    }
     SmallShell &smash = SmallShell::getInstance();
-    int signum = stoi(args[1]); //the minus has been erased
-    jid_t job_id = stoi(args[2]);
+    string signal_str = args[1];
+    signal_str = signal_str.erase(0,1);
+    int signum = stoi(signal_str); //the minus has been erased
+    int job_id = stoi(args[2]);
+    smash.jobs_list.removeFinishedJobs();
     JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);
     if (job == nullptr){ //no such job
         cerr << "smash error: kill: job-id " << job_id << " does not exist" <<endl;

@@ -59,14 +59,14 @@ void freeArgs (char **args, int size){
 
 string _ltrim(const std::string& s)
 {
-    size_t start = s.find_first_not_of(WHITESPACE);
-    return (start == std::string::npos) ? "" : s.substr(start);
+  size_t start = s.find_first_not_of(WHITESPACE);
+  return (start == std::string::npos) ? "" : s.substr(start);
 }
 
 string _rtrim(const std::string& s)
 {
-    size_t end = s.find_last_not_of(WHITESPACE);
-    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+  size_t end = s.find_last_not_of(WHITESPACE);
+  return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 void removespace(string str);
 string _trim(const std::string& s)
@@ -76,41 +76,41 @@ string _trim(const std::string& s)
     return _rtrim(_ltrim(s));
 }
 int _parseCommandLine(const char* cmd_line, char** args) {
-    FUNC_ENTRY()
-    int i = 0;
-    std::istringstream iss(_trim(string(cmd_line)));
-    for(std::string s; iss >> s; ) {
-        args[i] = (char*)malloc(s.length()+1);
-        memset(args[i], 0, s.length()+1);
-        strcpy(args[i], s.c_str());
-        args[++i] = nullptr;
-    }
-    return i;
+  FUNC_ENTRY()
+  int i = 0;
+  std::istringstream iss(_trim(string(cmd_line)));
+  for(std::string s; iss >> s; ) {
+    args[i] = (char*)malloc(s.length()+1);
+    memset(args[i], 0, s.length()+1);
+    strcpy(args[i], s.c_str());
+    args[++i] = nullptr;
+  }
+  return i;
 
-    FUNC_EXIT()
+  FUNC_EXIT()
 }
 
 bool _isBackgroundCommand(const char* cmd_line) {
-    const string str(cmd_line);
-    return str[str.find_last_not_of(WHITESPACE)] == '&';
+  const string str(cmd_line);
+  return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
 
 void _removeBackgroundSign(char* cmd_line) {
-    const string str(cmd_line);
-    // find last character other than spaces
-    unsigned int idx = str.find_last_not_of(WHITESPACE);
-    // if all characters are spaces then return
-    if (idx == string::npos) {
-        return;
-    }
-    // if the command line does not end with & then return
-    if (cmd_line[idx] != '&') {
-        return;
-    }
-    // replace the & (background sign) with space and then remove all tailing spaces.
-    cmd_line[idx] = ' ';
-    // truncate the command line string up to the last non-space character
-    cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
+  const string str(cmd_line);
+  // find last character other than spaces
+  unsigned int idx = str.find_last_not_of(WHITESPACE);
+  // if all characters are spaces then return
+  if (idx == string::npos) {
+    return;
+  }
+  // if the command line does not end with & then return
+  if (cmd_line[idx] != '&') {
+    return;
+  }
+  // replace the & (background sign) with space and then remove all tailing spaces.
+  cmd_line[idx] = ' ';
+  // truncate the command line string up to the last non-space character
+  cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
 //make sure the last char "/n" is also checked
@@ -130,14 +130,14 @@ bool isNumber (string str){
 bool is_cmd_builtin_bg(string cmd_s){
     string cmd_to_run = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     return (cmd_to_run == "chprompt&") ||
-           (cmd_to_run == "showpid&") ||
-           (cmd_to_run == "pwd&") ||
-           (cmd_to_run == "cd&") ||
-           (cmd_to_run == "jobs&") ||
-           (cmd_to_run == "fg&") ||
-           (cmd_to_run == "bg&") ||
-           (cmd_to_run == "quit&") ||
-           (cmd_to_run == "kill&");
+            (cmd_to_run == "showpid&") ||
+            (cmd_to_run == "pwd&") ||
+            (cmd_to_run == "cd&") ||
+            (cmd_to_run == "jobs&") ||
+            (cmd_to_run == "fg&") || 
+            (cmd_to_run == "bg&") ||
+            (cmd_to_run == "quit&") ||
+            (cmd_to_run == "kill&");
 }
 
 // ---- Small Shell ---- //
@@ -248,19 +248,10 @@ void JobsList::removeFinishedJobs() {
         if (pid != 0) {
             curr_job--;
             jobs_list.erase(curr_job + 1);
-            // int stat = WTERMSIG(status);
+           // int stat = WTERMSIG(status);
         }
 
     }
-}
-int JobsList::getMaxJidInList() {
-    int current_max_job_id = 0;
-    for (auto job: jobs_list) {
-        if (job.jobId > current_max_job_id) {
-            current_max_job_id = job.jobId;
-        }
-    }
-    return current_max_job_id;
 }
 
 JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
@@ -297,12 +288,12 @@ JobsList::JobEntry* JobsList::getJobByPId(pid_t jobPId){
 }
 
 JobsList::JobEntry::JobEntry(jid_t jobId, pid_t jobPid, time_t creation_time, string &command, bool is_stopped, int duration) :
-        jobId (jobId),
-        jobPid(jobPid),
-        creation_time(creation_time),
-        command (command),
-        is_stopped(false),
-        duration(duration) {}
+                            jobId (jobId),
+                            jobPid(jobPid),
+                            creation_time(creation_time),
+                            command (command),
+                            is_stopped(false),
+                            duration(duration) {}
 
 time_t JobsList::JobEntry::getElapsedTime() const {
     time_t curr_time;
@@ -331,8 +322,29 @@ void JobsList::removeJobById(jid_t id){
         }
     }
 }
+int JobsList::getMaxJidInList(){
+    int curr_max = 0;
+    for (auto job: jobs_list){
+        if (job.jobId > curr_max){
+            curr_max = job.jobId;
+        }
+    }
+    return curr_max;
+}
 
 void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
+//    removeFinishedJobs();
+//    time_t timestamp;
+//    time(&timestamp);
+//    if (getJobByPId(pid) != nullptr) {//pid was stopped
+//        JobEntry *fg_stopped_job = getJobByPId(pid);
+//        fg_stopped_job->is_stopped = true;
+//        return;
+//    }
+//    int newJobId = getMaxJidInList();
+//    newJobId++;
+//    JobEntry new_job(newJobId,pid,timestamp, cmd, is_stopped,duration);
+//    jobs_list.push_back(new_job);
     int id=1;
     removeFinishedJobs();
     time_t timestamp;
@@ -341,12 +353,12 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
 
     if(!jobs_list.empty())
     {
-        id=jobs_list.back().jobId + 1;
+        id=getMaxJidInList(); + 1;
     }
 
     if(smash.fg_jid!=EMPTY) {
         int curr_job_id = smash.fg_jid;
-        JobEntry new_job(curr_job_id, pid, timestamp, cmd, is_stopped, duration);
+        JobEntry new_job(id, pid, timestamp, cmd, is_stopped,duration);
         vector<JobEntry>::iterator it;
         int i=0;
         for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
@@ -355,12 +367,13 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
             }
             i++;
         }
-        jobs_list.insert(jobs_list.begin() + i, new_job);
+        jobs_list.insert(jobs_list.begin() +i, new_job);
     }
     else{
-        JobEntry new_job(id,pid,timestamp,cmd,is_stopped,duration);
+        JobEntry new_job(id,pid,timestamp,cmd, is_stopped,duration);
         jobs_list.push_back(new_job);
     }
+
 }
 
 time_t SmallShell::getMostRecentAlarmTime() {
@@ -479,11 +492,11 @@ void JobsCommand::execute() {
             //difftime() function returns the number of seconds elapsed between time time1 and time time0, represented as a double
             //time(nullptr) returns the current calendar time as an object of type time_t
             cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
-                 << " " << current_job.getElapsedTime() << " secs (stopped)" << endl;
+            << " " << current_job.getElapsedTime() << " secs (stopped)" << endl;
         }
         else {
             cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
-                 << " " << current_job.getElapsedTime() << " secs" << endl;
+            << " " << current_job.getElapsedTime() << " secs" << endl;
         }
     }
 }
@@ -512,7 +525,7 @@ void ForegroundCommand::execute() {
         pid_t job_pid = job->jobPid;
         jid_t job_id = job->jobId;
         cout << job->command << " : " << job->jobPid << endl;
-        //   smash.current_process_pid = job_pid;
+     //   smash.current_process_pid = job_pid;
         smash.curr_fg_pid = job_pid;
         smash.current_cmd = job->command;
         smash.fg_jid = job_id;
@@ -545,7 +558,7 @@ void ForegroundCommand::execute() {
             // now job is in backround
             cout << job->command << " : " << job->jobPid << endl;
 
-            //       smash.current_process_pid = job_pid;
+     //       smash.current_process_pid = job_pid;
             smash.curr_fg_pid = job_pid;
             smash.current_cmd = job->command;
             smash.fg_jid = job_id;
@@ -559,12 +572,12 @@ void ForegroundCommand::execute() {
             }
         }
         else {
-            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            cerr << "smash error: fg: job-id" << job_id << "does not exist" << endl;            
         }
         freeArgs(args, num_of_args);
         return;
     }
-
+    
     else {
         cerr << "smash error: fg: invalid arguments" << endl;
         freeArgs(args, num_of_args);
@@ -720,17 +733,10 @@ void ExternalCommand::execute() {
                 return;
             }
         } else { //simple command
-//            if (execvp(args[0], args) == FAIL) {
-//                perror("smash error: execvp failed");
-//                return;
-//            }
-            if (execvp(args[0], args) == FAIL)
-                if (kill(getpid(), SIGKILL) == FAIL) {
-                    perror("smash error: kill failed");
-                    return;
-                }
-            perror("smash error: execvp failed");
-            return;
+            if (execvp(args[0], args) == FAIL) {
+                perror("smash error: execvp failed");
+                return;
+            }
         }
     } else { //process is original (father)
         if (is_background) { //background
@@ -812,8 +818,8 @@ void TimeoutCommand::execute() {
 
 void SmallShell::addTimeoutToAlarm(const char* cmd, pid_t pid, int duration)
 {
-    string cmd_line = string(cmd);
-    alarms_list.addJob(cmd_line, false, duration);
+  string cmd_line = string(cmd);
+  alarms_list.addJob(cmd_line, false, duration);
 }
 
 void TimeoutCommand::addAlarm(pid_t pid) const{
@@ -876,7 +882,7 @@ void PipeCommand::execute(){
             perror("smash error: close failed");
             return;
         }
-        // Command *cmd = smash.CreateCommand(command1.c_str());
+       // Command *cmd = smash.CreateCommand(command1.c_str());
         smash.executeCommand(command1.c_str());
         if (kill(getpid(), SIGKILL) == FAIL){
             perror("smash error: kill failed");
@@ -911,7 +917,7 @@ void PipeCommand::execute(){
             perror("smash error: close failed");
             return;
         }
-        //  Command *cmd = smash.CreateCommand(command2.c_str());
+      //  Command *cmd = smash.CreateCommand(command2.c_str());
         smash.executeCommand(command2.c_str());
         if (kill(getpid(), SIGKILL) == FAIL){
             perror("smash error: kill failed");
@@ -958,10 +964,10 @@ void RedirectionCommand::execute(){
     SmallShell& smash = SmallShell::getInstance();
     int fd;
     if (is_append){
-        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_APPEND, 0655);
+        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_APPEND, 0666);
     }
     else {
-        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0655);
+        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0666);
     }
     if (fd == FAIL){
         perror("smash error: open failed");
@@ -991,4 +997,5 @@ void RedirectionCommand::execute(){
     }
 
 }
+
 

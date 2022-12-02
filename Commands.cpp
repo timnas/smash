@@ -253,6 +253,15 @@ void JobsList::removeFinishedJobs() {
 
     }
 }
+int JobsList::getMaxJidInList() {
+    int current_max_job_id = 0;
+    for (auto job: jobs_list) {
+        if (job.jobId > current_max_job_id) {
+            current_max_job_id = job.jobId;
+        }
+    }
+    return current_max_job_id;
+}
 
 JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int max_stopped_jid = -1;
@@ -550,7 +559,7 @@ void ForegroundCommand::execute() {
             }
         }
         else {
-            cerr << "smash error: fg: job-id" << job_id << "does not exist" << endl;
+            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
         }
         freeArgs(args, num_of_args);
         return;
@@ -711,10 +720,17 @@ void ExternalCommand::execute() {
                 return;
             }
         } else { //simple command
-            if (execvp(args[0], args) == FAIL) {
-                perror("smash error: execvp failed");
-                return;
-            }
+//            if (execvp(args[0], args) == FAIL) {
+//                perror("smash error: execvp failed");
+//                return;
+//            }
+            if (execvp(args[0], args) == FAIL)
+                if (kill(getpid(), SIGKILL) == FAIL) {
+                    perror("smash error: kill failed");
+                    return;
+                }
+            perror("smash error: execvp failed");
+            return;
         }
     } else { //process is original (father)
         if (is_background) { //background
@@ -838,9 +854,11 @@ void PipeCommand::execute(){
         perror("smash error: fork failed");
         if (close(fds[0]) == FAIL){
             perror("smash error: close failed");
+            return;
         }
         if (close(fds[1]) == FAIL){
             perror("smash error: close failed");
+            return;
         }
         return;
     }
@@ -871,9 +889,11 @@ void PipeCommand::execute(){
         perror("smash error: fork failed");
         if (close(fds[0]) == FAIL){
             perror("smash error: close failed");
+            return;
         }
         if (close(fds[1]) == FAIL){
             perror("smash error: close failed");
+            return;
         }
         return;
     }
@@ -938,10 +958,10 @@ void RedirectionCommand::execute(){
     SmallShell& smash = SmallShell::getInstance();
     int fd;
     if (is_append){
-        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_APPEND, 0666);
+        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_APPEND, 0655);
     }
     else {
-        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0666);
+        fd = open(file_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0655);
     }
     if (fd == FAIL){
         perror("smash error: open failed");
@@ -950,19 +970,24 @@ void RedirectionCommand::execute(){
     int stdout_temp_fd = dup(STDOUT_FILENO);
     if (stdout_temp_fd == FAIL){
         perror("smash error: dup failed");
+        return;
     }
     if (dup2(fd, STDOUT_FILENO) == FAIL){
         perror("smash error: dup2 failed");
+        return;
     }
     if (close(fd) == FAIL){
         perror("smash error: close failed");
+        return;
     }
     smash.executeCommand(cmd_line); //maybe command line??
     if (dup2(stdout_temp_fd,STDOUT_FILENO) == FAIL){
         perror("smash error: dup2 failed");
+        return;
     }
     if (close(stdout_temp_fd) == FAIL){
         perror("smash error: close failed");
+        return;
     }
 
 }

@@ -505,6 +505,7 @@ void ForegroundCommand::execute() {
         jid_t job_id = job->jobId;
         cout << job->command << " : " << job->jobPid << endl;
         smash.current_process_pid = job_pid;
+        smash.curr_fg_pid = job_pid;
         smash.current_cmd = job->command;
         smash.fg_jid = job_id;
         smash.jobs_list.removeJobById(job_id);

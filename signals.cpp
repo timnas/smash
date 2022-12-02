@@ -35,7 +35,7 @@ void ctrlZHandler(int sig_num) {
 
 void ctrlCHandler(int sig_num) {
   SmallShell &smash = SmallShell::getInstance();
-  pid_t pid = smash.current_process_pid;
+  pid_t pid = smash.curr_fg_pid;
   cout << "smash: got ctrl-C" << endl;
   if (pid == EMPTY){ //no process in fg
       return;

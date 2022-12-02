@@ -189,7 +189,7 @@ class SmallShell {
         string prompt = "smash";
         string previous_dir = "";
 
-        pid_t current_process_pid = EMPTY;
+//        pid_t current_process_pid = EMPTY;
         jid_t fg_jid = EMPTY;
         pid_t curr_fg_pid = EMPTY;
         string current_cmd;

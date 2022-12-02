@@ -231,7 +231,6 @@ void SmallShell::executeCommand(const char *cmd_line) {
 
     // reset all parameters: preparing for a new cmd
     current_cmd = "";
-    current_process_pid = EMPTY;
     curr_fg_pid = EMPTY;
     //current_duration = 0;
     //current_alarm_cmd = "";
@@ -504,7 +503,7 @@ void ForegroundCommand::execute() {
         pid_t job_pid = job->jobPid;
         jid_t job_id = job->jobId;
         cout << job->command << " : " << job->jobPid << endl;
-        smash.current_process_pid = job_pid;
+     //   smash.current_process_pid = job_pid;
         smash.curr_fg_pid = job_pid;
         smash.current_cmd = job->command;
         smash.fg_jid = job_id;
@@ -537,7 +536,8 @@ void ForegroundCommand::execute() {
             // now job is in backround
             cout << job->command << " : " << job->jobPid << endl;
 
-            smash.current_process_pid = job_pid;
+     //       smash.current_process_pid = job_pid;
+            smash.curr_fg_pid = job_pid;
             smash.current_cmd = job->command;
             smash.fg_jid = job_id;
             smash.jobs_list.removeJobById(job_id);

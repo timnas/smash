@@ -142,6 +142,7 @@ class JobsList {
     JobEntry* getJobByPId(pid_t jobId);
     void removeJobById(int jobId);
     JobEntry* getLastJob(int* lastJobId);
+    int getMaxJidInList();
     JobEntry* getLastStoppedJob(int *jobId);
 };
 

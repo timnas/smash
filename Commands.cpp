@@ -322,24 +322,43 @@ void JobsList::removeJobById(jid_t id){
         }
     }
 }
-
+int JobsList::getMaxJidInList(){
+    int curr_max = 0;
+    for (auto job: jobs_list){
+        if (job.jobId > curr_max){
+            curr_max = job.jobId;
+        }
+    }
+    return curr_max;
+}
 
 void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
-    int jid=1;
     removeFinishedJobs();
     time_t timestamp;
     time(&timestamp);
-    SmallShell& smash = SmallShell::getInstance();
-    if(!jobs_list.empty())
-    {
-        getLastJob(&jid);
-        jid++;
+    if (getJobByPId(pid) != nullptr) {//pid was stopped
+        JobEntry *fg_stopped_job = getJobByPId(pid);
+        fg_stopped_job->is_stopped = true;
+        return;
     }
-    JobEntry new_job(jid, pid, timestamp, cmd, is_stopped, duration);
+    int newJobId = getMaxJidInList();
+    newJobId++;
+    JobEntry new_job(newJobId,pid,timestamp, cmd, is_stopped,duration);
     jobs_list.push_back(new_job);
+//    int id=1;
+//    removeFinishedJobs();
+//    time_t timestamp;
+//    time(&timestamp);
+//    SmallShell& smash = SmallShell::getInstance();
+//
+//    if(!jobs_list.empty())
+//    {
+//        id=jobs_list.back().jobPid + 1;
+//    }
+//
 //    if(smash.fg_jid!=EMPTY) {
 //        int curr_job_id = smash.fg_jid;
-//        JobEntry new_job(curr_job_id, pid, timestamp, cmd, is_stopped, duration);
+//        JobEntry new_job(id, pid, timestamp, cmd, is_stopped,duration);
 //        vector<JobEntry>::iterator it;
 //        int i=0;
 //        for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
@@ -348,12 +367,13 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
 //            }
 //            i++;
 //        }
-//        jobs_list.insert(jobs_list.begin() + i, new_job);
+//        jobs_list.insert(jobs_list.begin() +i, new_job);
 //    }
 //    else{
-//        JobEntry new_job(id,pid,timestamp,cmd,is_stopped,duration);
+//        JobEntry new_job(id,pid,timestamp,cmd, is_stopped,duration);
 //        jobs_list.push_back(new_job);
 //    }
+
 }
 
 time_t SmallShell::getMostRecentAlarmTime() {

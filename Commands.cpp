@@ -353,7 +353,7 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
 
     if(!jobs_list.empty())
     {
-        id=getMaxJidInList(); + 1;
+        id=getMaxJidInList() + 1;
     }
 
     if(smash.fg_jid!=EMPTY) {
@@ -704,8 +704,8 @@ void QuitCommand::execute() {
 
 ExternalCommand::ExternalCommand(const char* cmd_line, bool is_alarm, bool is_background) :
         Command(cmd_line),
-        is_alarm(is_alarm),
-        is_background(is_background){}
+        is_background(is_background),
+        is_alarm(is_alarm){}
 
 bool ExternalCommand::isCmdComplex(string cmd) {
     return ((cmd.find_first_of('*') != string::npos) || (cmd.find_first_of('?') != string::npos));
@@ -758,7 +758,7 @@ void ExternalCommand::execute() {
 }
 
 void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
-    int num_of_args = 0;
+    //int num_of_args = 0;
     //char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
 

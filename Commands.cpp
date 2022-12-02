@@ -512,16 +512,13 @@ void ForegroundCommand::execute() {
         smash.curr_fg_pid = job_pid;
         smash.current_cmd = job->command;
         smash.fg_jid = job_id;
-
+        smash.jobs_list.removeJobById(job_id);
         int stat_loc;
         if (waitpid(job_pid, &stat_loc, WUNTRACED) == FAIL) {
             perror("smash error: waitpid failed");
             freeArgs(args, num_of_args);
             return;
         }
-        smash.jobs_list.removeJobById(job_id);
-        smash.fg_jid = EMPTY;
-        smash.curr_fg_pid = EMPTY;
     }
 
     else if (num_of_args == 2) { //Bring wanted job to foreground
@@ -548,6 +545,7 @@ void ForegroundCommand::execute() {
             smash.curr_fg_pid = job_pid;
             smash.current_cmd = job->command;
             smash.fg_jid = job_id;
+            smash.jobs_list.removeJobById(job_id);
 
             int stat_loc;
             if (waitpid(job_pid, &stat_loc, WUNTRACED) == FAIL) {
@@ -555,9 +553,6 @@ void ForegroundCommand::execute() {
                 freeArgs(args, num_of_args);
                 return;
             }
-            smash.jobs_list.removeJobById(job_id);
-            smash.fg_jid = EMPTY;
-            smash.curr_fg_pid = EMPTY;
         }
         else {
             cerr << "smash error: fg: job-id" << job_id << "does not exist" << endl;

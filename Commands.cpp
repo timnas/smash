@@ -466,7 +466,7 @@ void JobsCommand::execute() {
     vector<JobsList::JobEntry>::iterator it;
     for (it = ((smash.jobs_list).jobs_list).begin(); it < ((smash.jobs_list).jobs_list).end(); it++){
         JobsList::JobEntry current_job = *it;
-        if (current_job.is_stopped == true){
+        if (current_job.is_stopped){
             //difftime() function returns the number of seconds elapsed between time time1 and time time0, represented as a double
             //time(nullptr) returns the current calendar time as an object of type time_t
             cout << "[" << current_job.jobId << "] " << current_job.command << " : " << current_job.jobPid
@@ -597,12 +597,12 @@ void BackgroundCommand::execute() {
         }
         jid_t job_id = stoi(args[1]); //stoi converts a string to an integer
         JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);
-        pid = job->jobPid;
         if (job != nullptr){
             if (!(job->is_stopped)){
                 cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
             }
             else {
+                pid = job->jobPid;
                 if (kill(pid, SIGCONT) == -1){
                     perror("smash error: kill failed");
                     freeArgs(args,num_of_args);

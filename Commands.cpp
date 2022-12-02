@@ -570,6 +570,7 @@ void BackgroundCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
+    pid_t pid = -1;
     //if no arguments - the last stopped job (in the jobs list, the one with mac JID) should be selected to continue running it in bg
     if (num_of_args == 1){
         jid_t last_job_jid;
@@ -580,13 +581,14 @@ void BackgroundCommand::execute() {
         }
         else {
             //kill returns 0 for success and -1 for failure
-            if (kill(last_job_jid, SIGCONT) == -1){
+            pid = last_job->jobPid;
+            if (kill(pid, SIGCONT) == -1){
                 perror("smash error: kill failed");
                 freeArgs(args,num_of_args);
                 return;
             }
             last_job->is_stopped = false;
-            cout << last_job->command << " : " << last_job->jobPid << endl;
+            cout << last_job->command << " : " << pid << endl;
         }
     }
     else if (num_of_args == 2){
@@ -595,12 +597,13 @@ void BackgroundCommand::execute() {
         }
         jid_t job_id = stoi(args[1]); //stoi converts a string to an integer
         JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);
+        pid = job->jobPid;
         if (job != nullptr){
             if (!(job->is_stopped)){
                 cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
             }
             else {
-                if (kill(job_id, SIGCONT) == -1){
+                if (kill(pid, SIGCONT) == -1){
                     perror("smash error: kill failed");
                     freeArgs(args,num_of_args);
                     return;

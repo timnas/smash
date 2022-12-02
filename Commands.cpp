@@ -323,35 +323,37 @@ void JobsList::removeJobById(jid_t id){
     }
 }
 
+
 void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
-    int id=1;
+    int jid=1;
     removeFinishedJobs();
     time_t timestamp;
     time(&timestamp);
     SmallShell& smash = SmallShell::getInstance();
-
     if(!jobs_list.empty())
     {
-        id=jobs_list.back().jobId + 1;
+        getLastJob(&jid);
+        jid++;
     }
-
-    if(smash.fg_jid!=EMPTY) {
-        int curr_job_id = smash.fg_jid;
-        JobEntry new_job(curr_job_id, pid, timestamp, cmd, is_stopped, duration);
-        vector<JobEntry>::iterator it;
-        int i=0;
-        for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
-            if (it->jobId > curr_job_id){
-                break;
-            }
-            i++;
-        }
-        jobs_list.insert(jobs_list.begin() + i, new_job);
-    }
-    else{
-        JobEntry new_job(id,pid,timestamp,cmd,is_stopped,duration);
-        jobs_list.push_back(new_job);
-    }
+    JobEntry new_job(jid, pid, timestamp, cmd, is_stopped, duration);
+    jobs_list.push_back(new_job);
+//    if(smash.fg_jid!=EMPTY) {
+//        int curr_job_id = smash.fg_jid;
+//        JobEntry new_job(curr_job_id, pid, timestamp, cmd, is_stopped, duration);
+//        vector<JobEntry>::iterator it;
+//        int i=0;
+//        for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
+//            if (it->jobId > curr_job_id){
+//                break;
+//            }
+//            i++;
+//        }
+//        jobs_list.insert(jobs_list.begin() + i, new_job);
+//    }
+//    else{
+//        JobEntry new_job(id,pid,timestamp,cmd,is_stopped,duration);
+//        jobs_list.push_back(new_job);
+//    }
 }
 
 time_t SmallShell::getMostRecentAlarmTime() {

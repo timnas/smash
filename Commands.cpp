@@ -253,38 +253,6 @@ void JobsList::removeFinishedJobs() {
         }
 
     }
-
-
-
-//
-//    vector<JobEntry>::iterator it;
-//    int newMax=0;
-//    //first clean the list - delete all finished jobs
-//    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
-//        JobEntry currentJob = *it;
-//        int status; //TODO check return val- should it be -1?
-//        int returned_val = waitpid(currentJob.jobId, &status, WNOHANG); //WNOHANG: return immediately if no child has exited
-//        // waitpid returns the process ID of the child whose state has changed, and returns -1 when there's an error
-//        // if returned_val = currentJID or -1, it means the job either finished or there's an error. so delete job
-//        if (returned_val == -1 ||returned_val == currentJob.jobId){
-//            jobs_list.erase(it);
-//            it--;
-//        }
-//    }
-//    //if the list is empty, the new jobs_num is 1. return
-//    if (jobs_list.empty()){
-//        jobs_num = 1;
-//        return;
-//    }
-//    //else = find new jobs_num
-//    for (it=jobs_list.begin(); it!=jobs_list.end(); it++){
-//        JobEntry currentJob = *it;
-//        if (currentJob.jobId > newMax){
-//            newMax = currentJob.jobId;
-//        }
-//    }
-//    newMax++;
-//    this->jobs_num = newMax;
 }
 
 JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
@@ -385,24 +353,6 @@ void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
         JobEntry new_job(id,pid,timestamp,cmd,is_stopped,duration);
         jobs_list.push_back(new_job);
     }
-
-//    SmallShell& smash = SmallShell::getInstance();
-//    this->removeFinishedJobs();
-//
-//    if(smash.is_cmd_fg) {
-//        jid_t curr_job_id = smash.current_job_id;
-//        auto curr_job = jobs_list.begin();
-//        for (; curr_job != jobs_list.end(); curr_job++) { //find position
-//            if (curr_job->jobId > curr_job_id) {
-//                break;
-//            }
-//        }
-//        jobs_list.insert(curr_job, JobEntry(smash.current_job_id, smash.pid, time(nullptr), cmd, is_stopped, duration)); //NOT SURE
-//    }
-//    else {
-//        jobs_list.push_back(JobEntry(this->jobs_num, smash.pid, time(nullptr), cmd, is_stopped, duration));
-//    }
-//    this->jobs_num++;
 }
 
 time_t SmallShell::getMostRecentAlarmTime() {
@@ -678,12 +628,7 @@ void KillCommand::execute() {
         freeArgs(args,num_of_args);
         return;
     }
-//    char first_sig_char = string(args[1]).at(0);
-//    if ((!isNumber(args[2])) || (first_sig_char != '-') || (!isNumber(string(args[1]).erase(0)))){
-//        cerr << "smash error: kill: invalid arguments" << endl;
-//        freeArgs(args,num_of_args);
-//        return;
-//    }
+
     SmallShell &smash = SmallShell::getInstance();
     string signal_str = args[1];
     signal_str = signal_str.erase(0,1);
@@ -824,32 +769,6 @@ void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
 }
 
 
-
-
-    //OLD ONE:
-//    else { //process is original
-//        SmallShell &smash = SmallShell::getInstance();
-//        if (is_cmd_bg) {
-//            (smash.jobs_list).addJob(s_cmd_line, pid);
-//            if (is_alarm) {
-//                smash.alarms_list.addJob(s_cmd_line, pid, is_alarm);
-//            }
-//            is_alarm = false;
-//        }
-//        else {
-//            smash.current_cmd = cmd_line;
-//            smash.current_process = pid;
-//            if (is_alarm) {
-//                smash.is_fg_alarm = true;
-//            }
-//            int stat_loc;
-//            if (waitpid(pid, &stat_loc, WUNTRACED) == FAIL) {
-//            perror("smash error: waitpid failed");
-//            return;
-//            }
-//        }
-//    }
-
 // ---- Time Out ---- //
 
 TimeoutCommand::TimeoutCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
@@ -870,35 +789,6 @@ void TimeoutCommand::execute() {
     }
 }
 
-
-    //OLD ONE:
-//    if (num_of_args < 3) {
-//        cerr << "smash error: timeout: invalid arguments" << endl;
-//        freeArgs(args, num_of_args);
-//        return;
-//    }
-//    int delay;
-//    if(!isNumber(args[1])) {
-//        cerr << "smash error: timeout: invalid arguments" << endl;
-//        freeArgs(args, num_of_args);
-//        return;
-//    }
-//    delay = stoi(args[1]);
-//    if (alarm(delay) == FAIL) {
-//        perror("smash error: alarm failed");
-//    }
-//
-//    string new_cmd;
-//    for (int i = 2; i < num_of_args; i++) {
-//        new_cmd.append(string(args[i]));
-//        new_cmd.append(" ");
-//    }
-//    smash.current_duration = delay;
-//    char c_cmd_line[COMMAND_ARGS_MAX_LENGTH];
-//    strcpy(c_cmd_line, cmd_line);
-//    smash.current_alarm_cmd = string(c_cmd_line);
-//    smash.executeCommand(new_cmd.c_str()); // TODO: need to set some bool in shell about: curr cmd is alarm
-//    freeArgs(args, num_of_args);            // and remeber to set it to false/free alarmcmd after execution
 
 void SmallShell::addTimeoutToAlarm(const char* cmd, pid_t pid, int duration)
 {

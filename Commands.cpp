@@ -333,46 +333,46 @@ int JobsList::getMaxJidInList(){
 }
 
 void JobsList::addJob(string cmd, pid_t pid, int duration, bool is_stopped) {
-    removeFinishedJobs();
-    time_t timestamp;
-    time(&timestamp);
-    if (getJobByPId(pid) != nullptr) {//pid was stopped
-        JobEntry *fg_stopped_job = getJobByPId(pid);
-        fg_stopped_job->is_stopped = true;
-        return;
-    }
-    int newJobId = getMaxJidInList();
-    newJobId++;
-    JobEntry new_job(newJobId,pid,timestamp, cmd, is_stopped,duration);
-    jobs_list.push_back(new_job);
-//    int id=1;
 //    removeFinishedJobs();
 //    time_t timestamp;
 //    time(&timestamp);
-//    SmallShell& smash = SmallShell::getInstance();
-//
-//    if(!jobs_list.empty())
-//    {
-//        id=jobs_list.back().jobPid + 1;
+//    if (getJobByPId(pid) != nullptr) {//pid was stopped
+//        JobEntry *fg_stopped_job = getJobByPId(pid);
+//        fg_stopped_job->is_stopped = true;
+//        return;
 //    }
-//
-//    if(smash.fg_jid!=EMPTY) {
-//        int curr_job_id = smash.fg_jid;
-//        JobEntry new_job(id, pid, timestamp, cmd, is_stopped,duration);
-//        vector<JobEntry>::iterator it;
-//        int i=0;
-//        for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
-//            if (it->jobId > curr_job_id){
-//                break;
-//            }
-//            i++;
-//        }
-//        jobs_list.insert(jobs_list.begin() +i, new_job);
-//    }
-//    else{
-//        JobEntry new_job(id,pid,timestamp,cmd, is_stopped,duration);
-//        jobs_list.push_back(new_job);
-//    }
+//    int newJobId = getMaxJidInList();
+//    newJobId++;
+//    JobEntry new_job(newJobId,pid,timestamp, cmd, is_stopped,duration);
+//    jobs_list.push_back(new_job);
+    int id=1;
+    removeFinishedJobs();
+    time_t timestamp;
+    time(&timestamp);
+    SmallShell& smash = SmallShell::getInstance();
+
+    if(!jobs_list.empty())
+    {
+        id=getMaxJidInList(); + 1;
+    }
+
+    if(smash.fg_jid!=EMPTY) {
+        int curr_job_id = smash.fg_jid;
+        JobEntry new_job(id, pid, timestamp, cmd, is_stopped,duration);
+        vector<JobEntry>::iterator it;
+        int i=0;
+        for (it = jobs_list.begin(); it != jobs_list.end(); it++) {
+            if (it->jobId > curr_job_id){
+                break;
+            }
+            i++;
+        }
+        jobs_list.insert(jobs_list.begin() +i, new_job);
+    }
+    else{
+        JobEntry new_job(id,pid,timestamp,cmd, is_stopped,duration);
+        jobs_list.push_back(new_job);
+    }
 
 }
 

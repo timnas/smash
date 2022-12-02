@@ -164,7 +164,7 @@ class JobsCommand : public BuiltInCommand {
 class ForegroundCommand : public BuiltInCommand {
  public:
   explicit ForegroundCommand(const char* cmd_line);
-  virtual ~ForegroundCommand() = default;
+  virtual ~ForegroundCommand();
   void execute() override;
 };
 

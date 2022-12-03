@@ -215,7 +215,7 @@ Command::Command(const char *cmd_line) : cmd_line(cmd_line) {
     else{
         cmd_no_ampersand = cmd_trimmed;
     }
-    num_of_args = _parseCommandLine(cmd_line, args);
+    num_of_args = _parseCommandLine(cmd_no_ampersand.c_str(), args);
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
@@ -650,7 +650,7 @@ void KillCommand::execute() {
     }
     pid_t job_pid = job->jobPid;
     if (kill(job_pid, signum) == -1){ //kill failed
-        perror("smash error: kill failed");
+        perror("smash error: kill: invalid arguments");
         freeArgs(args,num_of_args);
         return;
     }
@@ -973,7 +973,7 @@ void RedirectionCommand::execute(){
         perror("smash error: close failed");
         return;
     }
-    smash.executeCommand(cmd_line); //maybe command line??
+    smash.executeCommand(command.c_str()); //maybe command line??
     if (dup2(stdout_temp_fd,STDOUT_FILENO) == FAIL){
         perror("smash error: dup2 failed");
         return;

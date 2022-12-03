@@ -15,7 +15,7 @@ void ctrlZHandler(int sig_num) {
         return;
     }
     string command = smash.current_cmd;
-    (smash.jobs_list).addJob(command,pid);
+    (smash.jobs_list).addJob(command,pid,0,true);
     if (kill(pid,SIGSTOP) == 0) { //success
         JobsList::JobEntry *job = (smash.jobs_list).getJobByPId(pid);
         if (job != nullptr){

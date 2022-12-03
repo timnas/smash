@@ -201,7 +201,12 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     }
     else if (firstWord == "timeout") {
         char* args[COMMAND_MAX_ARGS];
-        int numOfArgs = _parseCommandLine(cmd_line, args);
+        int num_of_args = _parseCommandLine(cmd_line, args);
+        if (num_of_args != 3){
+            cerr << "smash error: timeout: invalid arguments" << endl;
+//            freeArgs(args, num_of_args);
+            return nullptr;
+        }
         string timeout_duration = string(args[1]);
         int timeout =stoi(timeout_duration);
         return new TimeoutCommand(cmd_line,timeout);
@@ -229,7 +234,10 @@ void SmallShell::executeCommand(const char *cmd_line) {
     }
     //jobs_list.removeFinishedJobs();
     Command* cmd = CreateCommand(cmd_line);
-    cmd->execute();
+    if (cmd){
+        cmd->execute();
+    }
+
 
     // reset all parameters: preparing for a new cmd
     current_cmd = "";

@@ -64,7 +64,7 @@ void alarmHandler(int sig_num) {
       return;
     }
     timeout = SmallShell::getInstance().getMostRecentAlarmTime();
-    is_empty = SmallShell::getInstance().alarms_list.jobs_list.size() > 0 ? false : true;
+    is_empty = !(SmallShell::getInstance().alarms_list.jobs_list.size() > 0);
     if(timeout > 0){
       alarm(timeout);
     } 

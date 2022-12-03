@@ -816,6 +816,11 @@ TimeoutCommand::TimeoutCommand(const char *cmd_line) : BuiltInCommand(cmd_line) 
 void TimeoutCommand::execute() {
     int num_of_args = 0;
     char **args = makeArgs(cmd_line, &num_of_args);
+    if (num_of_args != 3){
+        cerr << "smash error: fg: invalid arguments" << endl;
+        freeArgs(args, num_of_args);
+        return;
+    }
     int timeout_duration = stoi(args[1]);
     this->time_out = timeout_duration;
     SmallShell &smash = SmallShell::getInstance();

@@ -555,7 +555,7 @@ void ForegroundCommand::execute() {
             }
         }
         else {
-            cerr << "smash error: fg: job-id" << job_id << "does not exist" << endl;
+            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
         }
         freeArgs(args, num_of_args);
         return;

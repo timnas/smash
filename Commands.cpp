@@ -490,12 +490,18 @@ void ForegroundCommand::execute() {
     SmallShell &smash = SmallShell::getInstance();
     smash.jobs_list.removeFinishedJobs();
     if (num_of_args == 1) { //Bring max job in list to foreground
+//        int max_jid;
+//        JobsList::JobEntry *job = smash.jobs_list.getLastJob(&max_jid);
+//
+//        if (!job) {
+//            cerr << "smash error: fg: jobs list is empty" << endl;
+//        }
+        if (smash.jobs_list.jobs_list.empty()){
+            cerr << "smash error: fg: jobs list is empty" << endl;
+            return;
+        }
         int max_jid;
         JobsList::JobEntry *job = smash.jobs_list.getLastJob(&max_jid);
-
-        if (!job) {
-            cerr << "smash error: fg: jobs list is empty" << endl;
-        }
         if (job->is_stopped) {
             if(kill(job->jobPid, SIGCONT) == FAIL) { // need to bring job to background
                 perror("smash error: kill failed");

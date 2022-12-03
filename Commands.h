@@ -44,9 +44,9 @@ class BuiltInCommand : public Command {
 
 class TimeoutCommand : public BuiltInCommand {
     int time_out;
-    //string cmd;
+    string cmd;
 public:
-    explicit TimeoutCommand(const char* cmd_line);
+    explicit TimeoutCommand(const char* cmd_line, int timeout);
     virtual ~TimeoutCommand() = default;
     void execute() override;
     void addAlarm(pid_t pid) const;

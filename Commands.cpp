@@ -200,7 +200,11 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         return new QuitCommand(cmd_line);
     }
     else if (firstWord == "timeout") {
-        return new TimeoutCommand(cmd_line);
+        char* args[COMMAND_MAX_ARGS];
+        int numOfArgs = _parseCommandLine(cmd_line, args);
+        string timeout_duration = string(args[1]);
+        int timeout =stoi(timeout_duration);
+        return new TimeoutCommand(cmd_line,timeout);
     }
     else {
         return new ExternalCommand(cmd_line, false, is_background); //TODO: change false to "is_cmd_alarm"
@@ -811,34 +815,52 @@ void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
 
 // ---- Time Out ---- //
 
-TimeoutCommand::TimeoutCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+TimeoutCommand::TimeoutCommand(const char *cmd_line, int timeout) : BuiltInCommand(cmd_line), time_out(timeout) {
+    cmd = string(cmd_line);
+    cmd = _trim(cmd);
+    cmd = cmd.substr(cmd.find_first_of(" \t") +1);
+    cmd = _trim(cmd);
+    cmd = cmd.substr(cmd.find_first_of(" \t") +1);
+}
 
 void TimeoutCommand::execute() {
-    int num_of_args = 0;
-    char **args = makeArgs(cmd_line, &num_of_args);
+//    int num_of_args = 0;
+//    char **args = makeArgs(cmd_line, &num_of_args);
     if (num_of_args != 3){
-        cerr << "smash error: fg: invalid arguments" << endl;
+        cerr << "smash error: timeout: invalid arguments" << endl;
         freeArgs(args, num_of_args);
         return;
     }
-    int timeout_duration = stoi(args[1]);
-    this->time_out = timeout_duration;
-    SmallShell &smash = SmallShell::getInstance();
-    Command *command = smash.CreateCommand(cmd_line); //TODO: check
-    command->setCmd(cmd_line);
-    auto *ex_cmd = dynamic_cast<ExternalCommand *>(command);
-    if (!ex_cmd) {
-        ex_cmd->timeoutExecute(this);
-    } else {
-        command->execute();
+    Command* command = SmallShell::getInstance().CreateCommand(cmd.c_str());
+    if (command == nullptr){
+        return;
     }
+    command->setCmd(cmd_line);
+    ExternalCommand* s_command = dynamic_cast<ExternalCommand*>(command);
+    if(s_command != nullptr)
+        s_command->timeoutExecute(this);
+    else
+        command->execute();
+
+    delete command;
+//    int timeout_duration = stoi(args[1]);
+//    this->time_out = timeout_duration;
+//    SmallShell &smash = SmallShell::getInstance();
+//    Command *command = smash.CreateCommand(cmd_line); //TODO: check
+//    command->setCmd(cmd_line);
+//    auto *ex_cmd = dynamic_cast<ExternalCommand *>(command);
+//    if (!ex_cmd) {
+//        ex_cmd->timeoutExecute(this);
+//    } else {
+//        command->execute();
+//    }
 }
 
 
 void SmallShell::addTimeoutToAlarm(const char* cmd, pid_t pid, int duration)
 {
     string cmd_line = string(cmd);
-    alarms_list.addJob(cmd_line, false, duration);
+    alarms_list.addJob(cmd_line, pid, duration, false);
 }
 
 void TimeoutCommand::addAlarm(pid_t pid) const{

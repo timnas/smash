@@ -640,6 +640,11 @@ void KillCommand::execute() {
     string signal_str = args[1];
     signal_str = signal_str.erase(0,1);
     int signum = stoi(signal_str); //the minus has been erased
+    if (signum < 1 || signum > 64){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args,num_of_args);
+        return;
+    }
     int job_id = stoi(args[2]);
     smash.jobs_list.removeFinishedJobs();
     JobsList::JobEntry *job = (smash.jobs_list).getJobById(job_id);

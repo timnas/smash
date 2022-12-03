@@ -202,7 +202,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     else if (firstWord == "timeout") {
         char* args[COMMAND_MAX_ARGS];
         int num_of_args = _parseCommandLine(cmd_line, args);
-        if (num_of_args != 3){
+        if (num_of_args < 3){
             cerr << "smash error: timeout: invalid arguments" << endl;
 //            freeArgs(args, num_of_args);
             return nullptr;
@@ -834,11 +834,11 @@ TimeoutCommand::TimeoutCommand(const char *cmd_line, int timeout) : BuiltInComma
 void TimeoutCommand::execute() {
 //    int num_of_args = 0;
 //    char **args = makeArgs(cmd_line, &num_of_args);
-    if (num_of_args != 3){
-        cerr << "smash error: timeout: invalid arguments" << endl;
-        freeArgs(args, num_of_args);
-        return;
-    }
+//    if (num_of_args < 3){
+//        cerr << "smash error: timeout: invalid arguments" << endl;
+//        freeArgs(args, num_of_args);
+//        return;
+//    }
     Command* command = SmallShell::getInstance().CreateCommand(cmd.c_str());
     if (command == nullptr){
         return;

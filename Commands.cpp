@@ -526,8 +526,7 @@ void ForegroundCommand::execute() {
         smash.curr_fg_pid = job_pid;
         smash.current_cmd = job->command;
         smash.fg_jid = job_id;
-        int stat_loc;
-        if (waitpid(job_pid, &stat_loc, WUNTRACED) == FAIL) {
+        if (waitpid(job_pid, nullptr, WUNTRACED) != job_pid) {
             perror("smash error: waitpid failed");
             freeArgs(args, num_of_args);
             return;
@@ -535,6 +534,7 @@ void ForegroundCommand::execute() {
         smash.jobs_list.removeJobById(job_id);
         smash.fg_jid = EMPTY;
         smash.curr_fg_pid = EMPTY;
+        return;
     }
 
     else if (num_of_args == 2) { //Bring wanted job to foreground
@@ -556,13 +556,10 @@ void ForegroundCommand::execute() {
             }
             // now job is in backround
             cout << job->command << " : " << job->jobPid << endl;
-
-            //       smash.current_process_pid = job_pid;
             smash.curr_fg_pid = job_pid;
             smash.current_cmd = job->command;
             smash.fg_jid = job_id;
-            int stat_loc;
-            if (waitpid(job_pid, &stat_loc, WUNTRACED) == FAIL) {
+            if (waitpid(job_pid, nullptr, WUNTRACED) != job_pid) {
                 perror("smash error: waitpid failed");
                 freeArgs(args, num_of_args);
                 return;

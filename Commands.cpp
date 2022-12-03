@@ -380,8 +380,18 @@ JobsList::JobEntry* SmallShell::getTimedOutJob(){
 }
 
 JobsList::JobEntry* JobsList::getLastJob(int* lastJobId){
-    *lastJobId = jobs_list.back().jobId;
-    return &jobs_list.back();
+//    *lastJobId = jobs_list.back().jobId;
+//    return &jobs_list.back();
+    int max_jid = -1;
+    vector<JobsList::JobEntry>::iterator it;
+    for (it = jobs_list.begin(); it < jobs_list.end(); it++){
+        JobsList::JobEntry current_job = *it;
+        if (current_job.jobId > max_jid){
+            max_jid = current_job.jobId;
+        }
+    }
+    *lastJobId = max_jid;
+    return getJobById(max_jid);
 }
 
 // ---- Built-in ---- //

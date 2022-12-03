@@ -687,8 +687,8 @@ void QuitCommand::execute() {
 
 ExternalCommand::ExternalCommand(const char* cmd_line, bool is_alarm, bool is_background) :
         Command(cmd_line),
-        is_alarm(is_alarm),
-        is_background(is_background){}
+        is_background(is_background),
+        is_alarm(is_alarm){}
 
 bool ExternalCommand::isCmdComplex(string cmd) {
     return ((cmd.find_first_of('*') != string::npos) || (cmd.find_first_of('?') != string::npos));
@@ -715,8 +715,18 @@ void ExternalCommand::execute() {
                 perror("smash error: execl failed");
                 return;
             }
+//        } else { //simple command
+//            if (execvp(args[0], args) == FAIL) {
+//                perror("smash error: execvp failed");
+//                return;
+//            }
+//        }
         } else { //simple command
             if (execvp(args[0], args) == FAIL) {
+                if (kill(getpid(), SIGKILL) == FAIL){
+                    perror("smash error: kill failed");
+                    return;
+                }
                 perror("smash error: execvp failed");
                 return;
             }
@@ -741,7 +751,7 @@ void ExternalCommand::execute() {
 }
 
 void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
-    int num_of_args = 0;
+    //int num_of_args = 0;
     //char **args = makeArgs(cmd_line, &num_of_args);
     SmallShell &smash = SmallShell::getInstance();
 

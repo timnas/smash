@@ -68,11 +68,9 @@ string _rtrim(const std::string& s)
     size_t end = s.find_last_not_of(WHITESPACE);
     return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
-void removespace(string str);
+
 string _trim(const std::string& s)
 {
-    //string string = _rtrim(_ltrim(s));
-    //removespace(s);
     return _rtrim(_ltrim(s));
 }
 int _parseCommandLine(const char* cmd_line, char** args) {
@@ -212,12 +210,12 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 Command::Command(const char *cmd_line) : cmd_line(cmd_line) {
     string cmd_trimmed = _trim(string(cmd_line));
     if (_isBackgroundCommand(cmd_line)){
-        cmd_no_ampersand = (cmd_trimmed.substr(0, cmd_trimmed.length() - 1)).c_str();
+        cmd_no_ampersand = cmd_trimmed.substr(0, cmd_trimmed.length() - 1);
     }
     else{
-        cmd_no_ampersand = cmd_trimmed.c_str();
+        cmd_no_ampersand = cmd_trimmed;
     }
-    num_of_args = _parseCommandLine(cmd_no_ampersand, args);
+    num_of_args = _parseCommandLine(cmd_line, args);
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
@@ -711,7 +709,7 @@ void ExternalCommand::execute() {
             return;
         }
         if (isCmdComplex(cmd_line)) {
-            if (execl("/bin/bash", "bin/bash", "-c", cmd_no_ampersand, nullptr) == FAIL) {
+            if (execl("/bin/bash", "bin/bash", "-c", cmd_no_ampersand.c_str(), nullptr) == FAIL) {
                 perror("smash error: execl failed");
                 return;
             }
@@ -765,7 +763,7 @@ void ExternalCommand::timeoutExecute(TimeoutCommand* cmd) {
             perror("smash error: setpgrp failed");
             return;
         }
-        if (execl("/bin/bash", "bin/bash", "-c", cmd_no_ampersand, nullptr) == FAIL) { //TODO: need to remove "&"?
+        if (execl("/bin/bash", "bin/bash", "-c", cmd_no_ampersand.c_str(), nullptr) == FAIL) { //TODO: need to remove "&"?
             perror("smash error: execl failed");
             return;
         }
@@ -936,15 +934,15 @@ void PipeCommand::execute(){
 RedirectionCommand::RedirectionCommand(const char* cmd_line, bool append) : Command(cmd_line), is_append(append){
     //remove ampersand - not sure if needed
     if (append){
-        command = string(cmd_no_ampersand).substr(0,string(cmd_no_ampersand).find_first_of(">>"));
+        command = cmd_no_ampersand.substr(0,cmd_no_ampersand.find_first_of(">>"));
         command = _trim(command);
-        file_name = string(cmd_no_ampersand).substr(string(cmd_no_ampersand).find_first_of(">>")+2);
+        file_name = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of(">>")+2);
         file_name = _trim(file_name);
     }
     else {
-        command = string(cmd_no_ampersand).substr(0,string(cmd_no_ampersand).find_first_of('>'));
+        command = cmd_no_ampersand.substr(0,cmd_no_ampersand.find_first_of('>'));
         command = _trim(command);
-        file_name = string(cmd_no_ampersand).substr(string(cmd_no_ampersand).find_first_of('>')+1);
+        file_name = cmd_no_ampersand.substr(cmd_no_ampersand.find_first_of('>')+1);
         file_name = _trim(file_name);
     }
 }

@@ -17,7 +17,7 @@ using namespace std;
 class Command {
   protected:
     const char* cmd_line;
-    const char* cmd_no_ampersand;
+    string cmd_no_ampersand;
     char *args[COMMAND_MAX_ARGS];
     int num_of_args;
   public:
